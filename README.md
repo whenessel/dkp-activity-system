@@ -112,15 +112,27 @@ docker exec -it dkp-web python manage.py help
 
 Сохранить фикстуры
 ```shell
-python manage.py dumpdata auth --indent 4 -o fixtures/auth.json
-python manage.py dumpdata game_activity --indent 4 -o fixtures/game_activity.json
+docker exec -it dkp-eve python manage.py dumpdata auth --indent 4 -o fixtures/auth.json
+docker exec -it dkp-eve python manage.py dumpdata game_activity --indent 4 -o fixtures/game_activity.json
 
 ```
 
 Загрузка при инициализации системы
 
 ```shell
-loaddata auth
-loaddata game_activity
+docker exec -it dkp-eve python manage.py loaddata auth
+docker exec -it dkp-eve python manage.py game_activity
+
+```
+
+
+### HACKS
+
+С подключением к БД из другой сети
+
+```shell
+# Create
+docker create --env-file=.env --name=dkp-eve --restart=always --link db_postgres_1:db_postgres_1 --net db_default -t dkp run_evebot
+
 
 ```

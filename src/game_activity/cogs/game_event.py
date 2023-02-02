@@ -209,7 +209,10 @@ class GameEventService:
         event_users = []
 
         for user, reaction in event_reactions.items():
-            event_user_state = self.USER_REACTIONS.get(reaction.emoji, GameEventUserState.NONE)
+            user_reaction = GameEventUserState.NONE
+            if reaction:
+                user_reaction = self.USER_REACTIONS.get(reaction.emoji, GameEventUserState.NONE)
+            event_user_state = user_reaction
             event_user = self.add_user_to_event(event=event, user=user, state=event_user_state)
             event_users.append(event_user)
 
