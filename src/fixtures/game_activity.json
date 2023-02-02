@@ -1,0 +1,70 @@
+[
+{
+    "model": "game_activity.gameeventtemplate",
+    "pk": 1,
+    "fields": {
+        "label": "chain",
+        "title": "Чейн по времени",
+        "description": "Обычный чейн по боссам",
+        "event_type": "CHAIN",
+        "cost": 50,
+        "capacity": 60,
+        "capacity_unit": "MINUTE",
+        "lateness_percent": 80,
+        "nightly_percent": 25,
+        "created": "2023-02-01T14:42:42.084Z",
+        "updated": "2023-02-01T14:42:42.084Z"
+    }
+},
+{
+    "model": "game_activity.gameeventtemplate",
+    "pk": 2,
+    "fields": {
+        "label": "once",
+        "title": "Разовый босс",
+        "description": "Один и более разовых боссов",
+        "event_type": "ONCE",
+        "cost": 25,
+        "capacity": 1,
+        "capacity_unit": "VISIT",
+        "lateness_percent": 80,
+        "nightly_percent": 25,
+        "created": "2023-02-01T14:45:43.369Z",
+        "updated": "2023-02-01T14:45:43.369Z"
+    }
+},
+{
+    "model": "game_activity.gameeventtemplate",
+    "pk": 3,
+    "fields": {
+        "label": "awake",
+        "title": "Пробуда",
+        "description": "Пробужденный босс",
+        "event_type": "AWAKENED",
+        "cost": 50,
+        "capacity": 1,
+        "capacity_unit": "VISIT",
+        "lateness_percent": 80,
+        "nightly_percent": 25,
+        "created": "2023-02-01T14:46:18.294Z",
+        "updated": "2023-02-01T14:46:18.294Z"
+    }
+},
+{
+    "model": "game_activity.gameeventtemplate",
+    "pk": 4,
+    "fields": {
+        "label": "chain2",
+        "title": "Чейн по количеству",
+        "description": "Обычный чейн по количеству боссов",
+        "event_type": "CHAIN",
+        "cost": 50,
+        "capacity": 10,
+        "capacity_unit": "THING",
+        "lateness_percent": 80,
+        "nightly_percent": 25,
+        "created": "2023-02-02T00:46:01.922Z",
+        "updated": "2023-02-02T00:46:01.922Z"
+    }
+}
+]
