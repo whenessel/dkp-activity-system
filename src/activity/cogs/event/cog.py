@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import io
 from typing import Any, Optional, List, Union, Tuple
 import datetime
@@ -526,15 +527,16 @@ class EventCog(commands.Cog):
             filter["member_id"] = member.id
             filename += f"_{member.name}"
 
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
+
         queryset = EventAttendance.objects.filter(**filter)
         resource = CommonEventAttendanceResource()
         result = resource.export(queryset=queryset)
         stat_data = io.BytesIO(result.xlsx)
         stat_file = discord.File(stat_data, filename=f"{filename}.xlsx",
                                  description=f"Статистика за период с {start_date} по {end_date}")
-        # await interaction.response.send_message(content=f"Все готово!", file=stat_file, ephemeral=True)
-        await interaction.followup.send(content=f"Все готово!", file=stat_file, ephemeral=True)
+
+        await interaction.followup.send(f"Все готово!", file=stat_file)
 
     # @event.command(name="debug", description="Только для разработки!")
     # @app_commands.guild_only()
