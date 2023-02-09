@@ -22,12 +22,13 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-
+    'import_export',
 ]
 
 LOCAL_APPS = [
-    'game_activity',
-    'discord_bot',
+    'evebot',
+    'activity',
+
 ]
 
 INSTALLED_APPS = [

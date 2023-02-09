@@ -4,7 +4,7 @@ x-dkp-docker: &dkp
   build:
     context: .
     dockerfile: ./compose/Dockerfile
-  image: dkp
+  image: whenessel/dkp:latest
   env_file:
     - ./docker-compose.env
 
@@ -25,12 +25,12 @@ services:
     <<: *dkp
     container_name: dkp-eve
     restart: always
-    command: run_evebot
+    command: runbot
     depends_on:
       - postgres
 
   postgres:
-    image: postgres:latest
+    image: postgres:13
     container_name: dkp-postgres
     restart: always
     volumes:

@@ -113,7 +113,7 @@ docker exec -it dkp-web python manage.py help
 Сохранить фикстуры
 ```shell
 docker exec -it dkp-eve python manage.py dumpdata auth --indent 4 -o fixtures/auth.json
-docker exec -it dkp-eve python manage.py dumpdata game_activity --indent 4 -o fixtures/game_activity.json
+docker exec -it dkp-eve python manage.py dumpdata activity --indent 4 -o fixtures/activity.json
 
 ```
 
@@ -121,7 +121,7 @@ docker exec -it dkp-eve python manage.py dumpdata game_activity --indent 4 -o fi
 
 ```shell
 docker exec -it dkp-eve python manage.py loaddata auth
-docker exec -it dkp-eve python manage.py game_activity
+docker exec -it dkp-eve python manage.py activity
 
 ```
 

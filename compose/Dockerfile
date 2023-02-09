@@ -9,7 +9,7 @@ ENV PYTHONIOENCODING 'utf-8'
 
 ENV DJANGO_SETTINGS_MODULE 'system.settings'
 ENV DJANGO_ALLOW_ASYNC_UNSAFE True
-ENV DATABASE_URL 'sqlite:///../db.sqlite3'
+ENV DATABASE_URL ''
 
 ENV PYTHONPATH "/opt/app/python:$PYTHONPATH"
 ENV PATH "/opt/app/bin:$PATH"

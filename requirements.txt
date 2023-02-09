@@ -3,3 +3,9 @@ django-environ
 psycopg2-binary
 discord.py
 ipython
+lru_dict
+parsedatetime
+python-dateutil
+aiohttp~=3.8.3
+enum-properties
+django-import-export
