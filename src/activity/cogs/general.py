@@ -149,7 +149,7 @@ class General(commands.Cog):
         cost="Количество очков ДКП за объем участия (число больше 0)",
         capacity="Необходимый объем участия (число больше 0)",
         unit="Тип необходимого участия",
-        quantity="Количество по умолчанию. По умолчанию равно CAPACITY (можно изменить при создании)",
+        quantity="Количество по умолчанию. 0",
         penalty="Процент получаемый за опоздание (число от 0 до 100). По умолчанию 50",
         military="Процент надбавки при наличие варов (число от 0 до 100). По умолчанию 20",
         overnight="Процент надбавки за ночное время (число от 0 до 100). По умолчанию 25",
@@ -164,13 +164,11 @@ class General(commands.Cog):
             cost: int,
             capacity: int,
             unit: str,
-            quantity: Optional[int],
+            quantity: Optional[int] = 0,
             penalty: Optional[int] = 50,
             military: Optional[int] = 25,
             overnight: Optional[int] = 25,
     ) -> None:
-        if quantity is None:
-            quantity = capacity
 
         event_template = EventTemplate.objects.create(
             title=title,

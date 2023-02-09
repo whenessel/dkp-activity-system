@@ -54,7 +54,7 @@ class QuantityModal(discord.ui.Modal):
         elif self.event.unit == CapacityUnit.VISIT:
             self.quantity.label = f"Введите количество посещений"
 
-        self.quantity._value = str(self.event.capacity)
+        self.quantity.placeholder = str(event.capacity)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         quantity = int(self.quantity.value)
@@ -202,7 +202,7 @@ class EventItem(Event):
                               "⏲️    опоздал\n"
                               "⚔️    вары (только для РЛ)\n"
                               "🌃    ночь (только для РЛ)")
-        "⏲️"
+
         if self.status == EventStatus.FINISHED:
             guild_members = list([member for member in self.guild.members])
 
@@ -367,14 +367,11 @@ class EventCog(commands.Cog):
     @event_channel_only()
     @event_moderator_only()
     @app_commands.describe(template="Шаблон с преднастройками события",
-                           description="Описание события",
-                           quantity="Указать количество минут или количество боссов. По умолчанию из шаблона.")
+                           description="Описание события")
     @app_commands.autocomplete(template=event_template_autocomplete)
     async def event_start(self, interaction: discord.Interaction,
                           template: app_commands.Transform[EventTemplate, EventTemplateTransformer],
-                          description: Optional[str], quantity: Optional[int]) -> None:
-        if quantity is None:
-            quantity = template.quantity
+                          description: Optional[str]) -> None:
 
         event = self.event_class.objects.create(
             guild_id=interaction.guild.id,
@@ -386,7 +383,6 @@ class EventCog(commands.Cog):
             unit=template.unit,
             capacity=template.capacity,
             cost=template.cost,
-            quantity=quantity,
             penalty=template.penalty,
             military=template.military,
             overnight=template.overnight,
