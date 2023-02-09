@@ -1,7 +1,7 @@
 from django.contrib import admin
-
-from import_export.admin import ExportActionMixin
 from .models import *
+# from import_export.admin import ExportActionModelAdmin
+# from .resources import CommonEventAttendanceResource
 
 
 @admin.register(EventChannel)
@@ -25,7 +25,7 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ["id", "type", "title", "cost", "capacity", "unit", "quantity",
                     "penalty", "military", "overnight", "member_display_name",
                     "status", "is_military", "is_overnight", "created", ]
-
+    list_filter = ["type", "status", "is_military", "is_overnight"]
     date_hierarchy = "created"
 
 
@@ -33,5 +33,9 @@ class EventAdmin(admin.ModelAdmin):
 class EventAttendanceAdmin(admin.ModelAdmin):
     list_display = ["id", "event_id", "member_id",
                     "member_display_name", "type", "reward", "created", ]
-
+    list_filter = ["event__type", "event__status", "event__is_military", "event__is_overnight"]
     date_hierarchy = "created"
+
+    # TODO: Tmp disable
+    # admin view class - ExportActionModelAdmin
+    # resource_classes = [CommonEventAttendanceResource]

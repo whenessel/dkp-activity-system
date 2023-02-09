@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import io
 from typing import Any, Optional, List, Union, Tuple
+import datetime
 import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 from evebot.bot import EveBot, EveContext
 from evebot.exceptions import NotEventChannel, NotEventModerator
 from activity.models import *
+from activity.resources import *
 from django.db import transaction
 from django.conf import settings
 from .enums import ModeratorReactions, MemberReactions
@@ -497,36 +500,73 @@ class EventCog(commands.Cog):
         except (EventItem.DoesNotExist, Event.DoesNotExist):
             await interaction.response.send_message(f"Событие с номером {event} не найдено.", ephemeral=True)
 
+    @event.command(name="statistic", description="Статистика посещаемости.")
+    @app_commands.guild_only()
+    @event_channel_only()
+    @event_moderator_only()
+    @app_commands.describe(
+        start="Пример: 2023-02-01 (YYYY-MM-DD)",
+        end="Пример: 2023-02-09 (YYYY-MM-DD)",
+        member="Участник, если надо получить индивидуальную стату"
+    )
+    async def event_debug(self, interaction: discord.Interaction,
+                          start: str, end: str,
+                          member: Optional[discord.Member]) -> None:
+
+        start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
+        end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
+        filter = {
+            "event__created__gte": start_date,
+            "event__created__lt": end_date,
+            "event__status": EventStatus.FINISHED
+        }
+
+        filename = f"report_{start}_{end}"
+        if member:
+            filter["member_id"] = member.id
+            filename += f"_{member.name}"
+
+        await interaction.response.defer()
+        queryset = EventAttendance.objects.filter(**filter)
+        resource = CommonEventAttendanceResource()
+        result = resource.export(queryset=queryset)
+        stat_data = io.BytesIO(result.xlsx)
+        stat_file = discord.File(stat_data, filename=f"{filename}.xlsx",
+                                 description=f"Статистика за период с {start_date} по {end_date}")
+        # await interaction.response.send_message(content=f"Все готово!", file=stat_file, ephemeral=True)
+        await interaction.followup.send(content=f"Все готово!", file=stat_file, ephemeral=True)
+
     # @event.command(name="debug", description="Только для разработки!")
     # @app_commands.guild_only()
     # @event_channel_only()
     # @event_moderator_only()
-    # async def event_debug(self, interaction: discord.Interaction) -> None:
-    #     template = EventTemplate.objects.first()
-    #     event = self.event_class.objects.create(
-    #         guild_id=interaction.guild.id,
-    #         channel_id=interaction.channel.id,
-    #         member_id=interaction.user.id,
-    #         member_name=interaction.user.name,
-    #         member_display_name=interaction.user.display_name,
-    #         type=template.type,
-    #         unit=template.unit,
-    #         capacity=template.capacity,
-    #         cost=template.cost,
-    #         quantity=template.quantity,
-    #         penalty=template.penalty,
-    #         military=template.military,
-    #         overnight=template.overnight,
-    #         title=f"DEBUG: {template.title}",
-    #         description=f"DEBUG: {template.description}",
-    #         status=EventStatus.STARTED
-    #     )
-    #     event_button_view = EventButtonPersistentView(cog=self)
-    #     message = await interaction.response.send_message(embed=event.embed, view=event_button_view)
-    #     if not message:
-    #         message = await interaction.original_response()
+    # @app_commands.describe(
+    #     start="Пример: 2023-02-01 (YYYY-MM-DD)",
+    #     end="Пример: 2023-02-09 (YYYY-MM-DD)",
+    #     member="Участник, если надо получить индивидуальную стату"
+    # )
+    # async def event_debug(self, interaction: discord.Interaction,
+    #                       start: str, end: str,
+    #                       member: Optional[discord.Member]) -> None:
     #
-    #     event.save(message_id=message.id)
+    #     start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
+    #     end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
+    #     filter = {
+    #         "event__created__gte": start_date,
+    #         "event__created__lt": end_date,
+    #         "event__status": EventStatus.FINISHED
+    #     }
     #
-    #     for event_reaction in MemberReactions.emojis() + ModeratorReactions.emojis():
-    #         await message.add_reaction(event_reaction)
+    #     filename = f"report_{start}_{end}"
+    #     if member:
+    #         filter["member_id"] = member.id
+    #         filename += f"_{member.display_name}"
+    #
+    #     queryset = EventAttendance.objects.filter(**filter)
+    #
+    #     resource = CommonEventAttendanceResource()
+    #     result = resource.export(queryset=queryset)
+    #     stat_data = io.BytesIO(result.xlsx)
+    #     stat_file = discord.File(stat_data, filename=f"{filename}.xlsx",
+    #                              description=f"Статистика за период с {start_date} по {end_date}")
+    #     await interaction.response.send_message(content=f"Все готово!", file=stat_file, ephemeral=True)
