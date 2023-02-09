@@ -1,0 +1,87 @@
+[
+{
+    "model": "activity.eventchannel",
+    "pk": 2,
+    "fields": {
+        "guild_id": 1067182736718180474,
+        "role_id": null,
+        "channel_id": 1070740958586622063,
+        "created": "2023-02-07T01:00:45.703",
+        "updated": "2023-02-07T01:00:45.703"
+    }
+},
+{
+    "model": "activity.eventchannel",
+    "pk": 4,
+    "fields": {
+        "guild_id": 1067182736718180474,
+        "role_id": null,
+        "channel_id": 1071029329242357790,
+        "created": "2023-02-07T08:55:49.207",
+        "updated": "2023-02-07T08:55:49.207"
+    }
+},
+{
+    "model": "activity.eventmoderator",
+    "pk": 2,
+    "fields": {
+        "guild_id": 1067182736718180474,
+        "role_id": null,
+        "channel_id": null,
+        "member_id": 410756194597339136,
+        "created": "2023-02-07T08:54:19.929",
+        "updated": "2023-02-07T08:54:19.929"
+    }
+},
+{
+    "model": "activity.eventtemplate",
+    "pk": 1,
+    "fields": {
+        "type": "CHAIN",
+        "capacity": 60,
+        "unit": "TIME",
+        "cost": 50,
+        "penalty": 50,
+        "military": 25,
+        "overnight": 25,
+        "title": "Чейн по времени",
+        "description": "Обычный чейн по времени",
+        "created": "2023-02-07T03:00:00",
+        "updated": "2023-02-07T03:00:00"
+    }
+},
+{
+    "model": "activity.eventtemplate",
+    "pk": 2,
+    "fields": {
+        "type": "ONCE",
+        "capacity": 1,
+        "unit": "THING",
+        "cost": 25,
+        "penalty": 50,
+        "military": 25,
+        "overnight": 25,
+        "title": "Разовый чейн",
+        "description": "Один и более разовых (Аден) боссов за 30 минут",
+        "created": "2023-02-07T03:00:00",
+        "updated": "2023-02-07T03:00:00"
+    }
+},
+{
+    "model": "activity.eventtemplate",
+    "pk": 3,
+    "fields": {
+        "type": "AWAKENED",
+        "capacity": 1,
+        "unit": "VISIT",
+        "cost": 50,
+        "penalty": 50,
+        "military": 25,
+        "overnight": 25,
+        "title": "Пробуда",
+        "description": "Пробужденный босс.",
+        "created": "2023-02-07T03:00:00",
+        "updated": "2023-02-07T03:00:00"
+    }
+}
+]

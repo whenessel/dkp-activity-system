@@ -9,10 +9,14 @@ ENV PYTHONIOENCODING 'utf-8'
 
 ENV DJANGO_SETTINGS_MODULE 'system.settings'
 ENV DJANGO_ALLOW_ASYNC_UNSAFE True
-ENV DATABASE_URL 'sqlite:///../db.sqlite3'
+ENV DATABASE_URL ''
 
 ENV PYTHONPATH "/opt/app/python:$PYTHONPATH"
 ENV PATH "/opt/app/bin:$PATH"
+
+ENV TZ=Europe/Moscow
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm -rf /tmp/requirements.txt

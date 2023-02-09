@@ -22,12 +22,13 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-
+    'import_export',
 ]
 
 LOCAL_APPS = [
-    'game_activity',
-    'discord_bot',
+    'evebot',
+    'activity',
+
 ]
 
 INSTALLED_APPS = [
@@ -93,7 +94,7 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_L10N = True
-USE_TZ = True
+USE_TZ = False
 
 
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'

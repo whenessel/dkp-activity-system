@@ -1,0 +1,41 @@
+version: '3.7'
+
+x-dkp-docker: &dkp
+  build:
+    context: .
+    dockerfile: ./compose/Dockerfile
+  image: whenessel/dkp:latest
+  env_file:
+    - ./docker-compose.env
+
+
+services:
+  web:
+    image: dkp
+    container_name: dkp-web
+    restart: always
+    env_file:
+      - ./docker-compose.env
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+
+  eve:
+    <<: *dkp
+    container_name: dkp-eve
+    restart: always
+    command: runbot
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    container_name: dkp-postgres
+    restart: always
+    volumes:
+      - ./tmp/postgres:/var/lib/postgresql/data:Z
+    ports:
+      - 5432:5432
+    env_file:
+      - ./docker-compose.env
