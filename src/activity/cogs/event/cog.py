@@ -480,9 +480,9 @@ class EventCog(commands.Cog):
             event.add_member_attendance(member=member, type=type)
             await interaction.response.send_message(f"{member.display_name} "
                                                     f"добавлен к событию {event.id} "
-                                                    f"как {AttendanceType[type].label}", ephemeral=True)
+                                                    f"как {AttendanceType[type].label}")  # , ephemeral=True)
         except (EventItem.DoesNotExist, Event.DoesNotExist):
-            await interaction.response.send_message(f"Событие с номером {event} не найдено.", ephemeral=True)
+            await interaction.response.send_message(f"Событие с номером {event} не найдено.")  # , ephemeral=True)
 
     @event.command(name="del", description="Удаление участника события")
     @app_commands.guild_only()
@@ -493,9 +493,9 @@ class EventCog(commands.Cog):
             event = self.event_class.objects.get(id=event)
             event.remove_member_attendance(member=member)
             await interaction.response.send_message(f"{member.display_name} "
-                                                    f"удален из события {event.id}", ephemeral=True)
+                                                    f"удален из события {event.id}")  # , ephemeral=True)
         except (EventItem.DoesNotExist, Event.DoesNotExist):
-            await interaction.response.send_message(f"Событие с номером {event} не найдено.", ephemeral=True)
+            await interaction.response.send_message(f"Событие с номером {event} не найдено.")  # , ephemeral=True)
 
     @event.command(name="statistic", description="Статистика посещаемости.")
     @app_commands.guild_only()
