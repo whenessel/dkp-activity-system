@@ -1,4 +1,5 @@
-from system.env import env
+from system.env import env, BASE_DIR
+from pathlib import Path
 
 
 EVE_PREFIX = env.str('EVE_PREFIX', default='!')
@@ -11,4 +12,6 @@ EVE_PUBLIC_KEY = env.str('EVE_PUBLIC_KEY', default='')
 EVE_CLIENT_ID = env.int('EVE_CLIENT_ID', default=None)
 EVE_CLIENT_SECRET = env.str('EVE_CLIENT_SECRET', default='')
 EVE_PERMISSIONS = env.int('EVE_PERMISSIONS', default=0)
-EVE_SYNC_COMMANDS_GLOBALLY = env.bool('EVE_SYNC_COMMANDS_GLOBALLY', default=False)
+EVE_SYNC_COMMANDS_GLOBALLY = env.bool('EVE_SYNC_COMMANDS_GLOBALLY', default=True)
+
+EVE_STORAGE_DIR = env.get_value('EVE_STORAGE_DIR', cast=Path, default=BASE_DIR / '..' / 'storage')

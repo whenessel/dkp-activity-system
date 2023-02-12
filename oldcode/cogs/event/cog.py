@@ -18,12 +18,19 @@ from .checks import event_channel_only, event_moderator_only
 from ..utils.transformers import EventTemplateTransformer
 
 
+class EventTemplateTransformer(app_commands.Transformer):
+    async def transform(self, interaction: discord.Interaction, value: Union[str, int]) -> EventTemplate:
+        event_template = EventTemplate.objects.get(id=int(value))
+        return event_template
+
+
 async def event_template_autocomplete(
         interaction: discord.Interaction,
         current: str) -> List[app_commands.Choice[str]]:
     templates: List[EventTemplate] = list(EventTemplate.objects.all().order_by("id"))
-    # results = fuzzy.finder(current, templates, key=lambda t: t.choice_text, raw=True)
-    return [app_commands.Choice(name=template.title, value=str(template.id))
+    return [app_commands.Choice(name=f"{template.title} | "
+                                     f"{template.cost} дкп за {template.capacity} {template.get_unit_display()}",
+                                value=str(template.id))
             for template in templates if (current in template.title) or (current in template.description)]
 
 
@@ -54,7 +61,7 @@ class QuantityModal(discord.ui.Modal):
         elif self.event.unit == CapacityUnit.VISIT:
             self.quantity.label = f"Введите количество посещений"
 
-        self.quantity._value = str(self.event.capacity)
+        self.quantity.placeholder = str(event.capacity)
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         quantity = int(self.quantity.value)
@@ -202,7 +209,7 @@ class EventItem(Event):
                               "⏲️    опоздал\n"
                               "⚔️    вары (только для РЛ)\n"
                               "🌃    ночь (только для РЛ)")
-        "⏲️"
+
         if self.status == EventStatus.FINISHED:
             guild_members = list([member for member in self.guild.members])
 
@@ -367,14 +374,11 @@ class EventCog(commands.Cog):
     @event_channel_only()
     @event_moderator_only()
     @app_commands.describe(template="Шаблон с преднастройками события",
-                           description="Описание события",
-                           quantity="Указать количество минут или количество боссов. По умолчанию из шаблона.")
+                           description="Описание события")
     @app_commands.autocomplete(template=event_template_autocomplete)
     async def event_start(self, interaction: discord.Interaction,
                           template: app_commands.Transform[EventTemplate, EventTemplateTransformer],
-                          description: Optional[str], quantity: Optional[int]) -> None:
-        if quantity is None:
-            quantity = template.quantity
+                          description: Optional[str]) -> None:
 
         event = self.event_class.objects.create(
             guild_id=interaction.guild.id,
@@ -386,7 +390,6 @@ class EventCog(commands.Cog):
             unit=template.unit,
             capacity=template.capacity,
             cost=template.cost,
-            quantity=quantity,
             penalty=template.penalty,
             military=template.military,
             overnight=template.overnight,
@@ -484,9 +487,9 @@ class EventCog(commands.Cog):
             event.add_member_attendance(member=member, type=type)
             await interaction.response.send_message(f"{member.display_name} "
                                                     f"добавлен к событию {event.id} "
-                                                    f"как {AttendanceType[type].label}", ephemeral=True)
+                                                    f"как {AttendanceType[type].label}")  # , ephemeral=True)
         except (EventItem.DoesNotExist, Event.DoesNotExist):
-            await interaction.response.send_message(f"Событие с номером {event} не найдено.", ephemeral=True)
+            await interaction.response.send_message(f"Событие с номером {event} не найдено.")  # , ephemeral=True)
 
     @event.command(name="del", description="Удаление участника события")
     @app_commands.guild_only()
@@ -497,9 +500,9 @@ class EventCog(commands.Cog):
             event = self.event_class.objects.get(id=event)
             event.remove_member_attendance(member=member)
             await interaction.response.send_message(f"{member.display_name} "
-                                                    f"удален из события {event.id}", ephemeral=True)
+                                                    f"удален из события {event.id}")  # , ephemeral=True)
         except (EventItem.DoesNotExist, Event.DoesNotExist):
-            await interaction.response.send_message(f"Событие с номером {event} не найдено.", ephemeral=True)
+            await interaction.response.send_message(f"Событие с номером {event} не найдено.")  # , ephemeral=True)
 
     @event.command(name="statistic", description="Статистика посещаемости.")
     @app_commands.guild_only()
@@ -510,7 +513,7 @@ class EventCog(commands.Cog):
         end="Пример: 2023-02-09 (YYYY-MM-DD)",
         member="Участник, если надо получить индивидуальную стату"
     )
-    async def event_debug(self, interaction: discord.Interaction,
+    async def event_statistic(self, interaction: discord.Interaction,
                           start: str, end: str,
                           member: Optional[discord.Member]) -> None:
 
@@ -518,7 +521,7 @@ class EventCog(commands.Cog):
         end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
         filter = {
             "event__created__gte": start_date,
-            "event__created__lt": end_date,
+            "event__created__lte": end_date,
             "event__status": EventStatus.FINISHED
         }
 
@@ -538,37 +541,10 @@ class EventCog(commands.Cog):
 
         await interaction.followup.send(f"Все готово!", file=stat_file)
 
-    # @event.command(name="debug", description="Только для разработки!")
-    # @app_commands.guild_only()
-    # @event_channel_only()
-    # @event_moderator_only()
-    # @app_commands.describe(
-    #     start="Пример: 2023-02-01 (YYYY-MM-DD)",
-    #     end="Пример: 2023-02-09 (YYYY-MM-DD)",
-    #     member="Участник, если надо получить индивидуальную стату"
-    # )
-    # async def event_debug(self, interaction: discord.Interaction,
-    #                       start: str, end: str,
-    #                       member: Optional[discord.Member]) -> None:
-    #
-    #     start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
-    #     end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
-    #     filter = {
-    #         "event__created__gte": start_date,
-    #         "event__created__lt": end_date,
-    #         "event__status": EventStatus.FINISHED
-    #     }
-    #
-    #     filename = f"report_{start}_{end}"
-    #     if member:
-    #         filter["member_id"] = member.id
-    #         filename += f"_{member.display_name}"
-    #
-    #     queryset = EventAttendance.objects.filter(**filter)
-    #
-    #     resource = CommonEventAttendanceResource()
-    #     result = resource.export(queryset=queryset)
-    #     stat_data = io.BytesIO(result.xlsx)
-    #     stat_file = discord.File(stat_data, filename=f"{filename}.xlsx",
-    #                              description=f"Статистика за период с {start_date} по {end_date}")
-    #     await interaction.response.send_message(content=f"Все готово!", file=stat_file, ephemeral=True)
+    @event.command(name="debug", description="Только для разработки!")
+    @app_commands.guild_only()
+    @event_channel_only()
+    @event_moderator_only()
+    @app_commands.describe()
+    async def event_debug(self, interaction: discord.Interaction, member: discord.Member) -> None:
+        await interaction.response.send_message(f"Все готово!", ephemeral=True)
