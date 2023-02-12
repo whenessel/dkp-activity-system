@@ -12,7 +12,7 @@ class EventChannel(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-id", ]
+        ordering = ['-id', ]
 
 
 class EventModerator(models.Model):
@@ -24,7 +24,7 @@ class EventModerator(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-id", ]
+        ordering = ['-id', ]
 
 
 class EventTemplate(models.Model):
@@ -39,17 +39,16 @@ class EventTemplate(models.Model):
     quantity = models.IntegerField(default=0)
 
     title = models.CharField(max_length=64, blank=False)
-    description = models.CharField(max_length=255, default='', blank=True)
+    description = models.TextField(default='', blank=True)
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-id", ]
+        ordering = ['-id', ]
 
 
 class Event(models.Model):
-    # TODO: Make id like discord ID - 1000000000000000000
     guild_id = models.BigIntegerField()
     role_id = models.BigIntegerField(null=True)
     channel_id = models.BigIntegerField(null=True)
@@ -68,7 +67,7 @@ class Event(models.Model):
     overnight = models.IntegerField(default=25)
 
     title = models.CharField(max_length=64, blank=False)
-    description = models.CharField(max_length=255, default='', blank=True)
+    description = models.TextField(default='', blank=True)
 
     quantity = models.IntegerField(default=0)
     status = models.CharField(max_length=32, choices=EventStatus.choices, default=EventStatus.PENDING)
@@ -80,7 +79,7 @@ class Event(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-id", ]
+        ordering = ['-id', ]
 
     def _reward(self, attend_type: AttendanceType) -> int:
         reward = self.cost * float(self.quantity) / float(self.capacity)
@@ -106,7 +105,7 @@ class Event(models.Model):
 
 class EventAttendance(models.Model):
 
-    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="event_attendances")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='event_attendances')
 
     member_id = models.BigIntegerField()
     member_name = models.CharField(max_length=255, blank=True)
@@ -119,9 +118,10 @@ class EventAttendance(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-id", ]
+        ordering = ['-id', ]
         constraints = [
-            models.UniqueConstraint(fields=["event", "member_id"], name="event-member-reacted")
+            models.UniqueConstraint(fields=['event', 'member_id'], name='event-attendance-member'),
+
         ]
 
     def compute_reward(self, partial_save=False) -> int:
@@ -130,5 +130,5 @@ class EventAttendance(models.Model):
         if self.type == AttendanceType.PARTIAL:
             self.reward = self.event.partial_reward
         if partial_save:
-            self.save(update_fields=["reward", ])
+            self.save(update_fields=['reward', ])
         return self.reward

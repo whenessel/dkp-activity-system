@@ -97,7 +97,7 @@ class Command(BaseCommand):
 
         try:
             handler = self.get_handler(*args, **options)
-            handler.run(settings.EVE_TOKEN)
+            handler.run(settings.EVE_TOKEN, log_handler=None)
         except OSError as e:
             # Use helpful error messages instead of ugly tracebacks.
             ERRORS = {

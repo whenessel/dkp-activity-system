@@ -1,7 +1,7 @@
 Django==4.1.6
 django-environ
 psycopg2-binary
-discord.py
+discord.py==2.1.1
 ipython
 lru_dict
 parsedatetime

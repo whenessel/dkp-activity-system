@@ -1,3 +1,4 @@
+from __future__ import annotations
 
 
 def get_shortened_string(length: int, start: int, string: str) -> str:
