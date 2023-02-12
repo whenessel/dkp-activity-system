@@ -21,7 +21,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm -rf /tmp/requirements.txt
 
-RUN mkdir -p /opt/app/bin /opt/app/python /opt/app/pids /opt/app/logs
+RUN mkdir -p /opt/app/bin /opt/app/python /opt/app/pids /opt/app/logs /opt/app/storage
 COPY ./src /opt/app/python
 
 WORKDIR /opt/app/python
