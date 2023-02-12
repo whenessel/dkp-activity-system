@@ -117,8 +117,8 @@ class EveBot(commands.AutoShardedBot):
         self.blacklist: PersistJsonFile[bool] = PersistJsonFile(settings.EVE_STORAGE_DIR / 'blacklist.json')
 
         self.bot_app_info = await self.application_info()
-        self.owner_id = self.bot_app_info.owner.id
 
+        self.owner_id = self.bot_app_info.owner.id
         self.owner_ids = settings.EVE_OWNERS
 
         log.info('Extension loading extensions...')
@@ -140,6 +140,9 @@ class EveBot(commands.AutoShardedBot):
     @property
     def owner(self) -> discord.User:
         return self.bot_app_info.owner
+
+    async def is_owner(self, user: discord.User, /) -> bool:
+        return user.id in self.owner_ids
 
     def _clear_gateway_data(self) -> None:
         one_week_ago = discord.utils.utcnow() - datetime.timedelta(days=7)
@@ -323,6 +326,7 @@ class EveBot(commands.AutoShardedBot):
         log.info(f'Discord.py API version: {discord.__version__}')
         log.info(f'Python version: {platform.python_version()}')
         log.info(f'Running on: {platform.system()} {platform.release()} ({os.name})')
+        log.info(f'Owners: {", ".join([str(owner_id) for owner_id in settings.EVE_OWNERS])}')
         log.info(f'Ready: logged in as "{self.user}" (ID: {self.user.id})')
 
     async def on_shard_resumed(self, shard_id: int):
