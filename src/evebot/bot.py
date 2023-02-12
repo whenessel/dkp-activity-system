@@ -119,6 +119,8 @@ class EveBot(commands.AutoShardedBot):
         self.bot_app_info = await self.application_info()
         self.owner_id = self.bot_app_info.owner.id
 
+        self.owner_ids = settings.EVE_OWNERS
+
         log.info('Extension loading extensions...')
         for extension in initial_extensions:
             try:
@@ -134,6 +136,7 @@ class EveBot(commands.AutoShardedBot):
     @property
     def prefix(self) -> str:
         return settings.EVE_PREFIX
+
     @property
     def owner(self) -> discord.User:
         return self.bot_app_info.owner
