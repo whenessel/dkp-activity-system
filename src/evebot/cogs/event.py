@@ -86,16 +86,17 @@ def event_embed(event: EventItem) -> discord.Embed:
     economy = f'ДКП:\t{event.cost}\n'
     if event.unit == CapacityUnit.TIME:
         economy += f'Расчетное время:\t{event.capacity} минут\n'
-    if event.unit == CapacityUnit.THING:
+    elif event.unit == CapacityUnit.BOSS:
         economy += f'Расчетное количество:\t{event.capacity} боссов\n'
-    if event.unit == CapacityUnit.VISIT:
+    elif event.unit == CapacityUnit.VISIT:
         economy += f'Расчетное количество:\t{event.capacity} посещений\n'
+
     if event.status == EventStatus.FINISHED:
         if event.unit == CapacityUnit.TIME:
             economy += f'Фактическое время:\t{event.quantity} минут\n'
-        if event.unit == CapacityUnit.VISIT:
+        elif event.unit == CapacityUnit.VISIT:
             economy += f'Фактическое количество:\t{event.quantity} посещений\n'
-        if event.unit == CapacityUnit.THING:
+        elif event.unit == CapacityUnit.BOSS:
             economy += f'Фактическое количество:\t{event.quantity} боссов\n'
         economy += f'**Присутствовавшие**: {event.full_reward} дкп\n' \
                    f'**Опоздавшие**: {event.partial_reward} дкп\n'
@@ -288,7 +289,7 @@ class QuantityModal(discord.ui.Modal):
 
         if self.event.unit == CapacityUnit.TIME:
             self.quantity.label = f'Введите количество минут'
-        elif self.event.unit == CapacityUnit.THING:
+        elif self.event.unit == CapacityUnit.BOSS:
             self.quantity.label = f'Введите количество боссов'
         elif self.event.unit == CapacityUnit.VISIT:
             self.quantity.label = f'Введите количество посещений'

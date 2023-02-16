@@ -20,7 +20,7 @@ class EventType(models.TextChoices):
 
 class CapacityUnit(models.TextChoices):
     TIME = 'TIME', 'за минут(а)'
-    THING = 'THING', 'за штук(а)'
+    BOSS = 'BOSS', 'за босса(ов)'
     VISIT = 'VISIT', 'за визит(ы)'
 
 

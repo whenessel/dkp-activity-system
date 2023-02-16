@@ -50,11 +50,6 @@ class Migration(migrations.Migration):
             field=models.CharField(choices=[('CHAIN', 'чейн'), ('ONCE', 'разовый'), ('AWAKENED', 'пробужденный'), ('TOI', 'ТОИ'), ('VEORA', 'веора'), ('SIEGE', 'осада'), ('CLUSTER', 'кластер'), ('CLAN', 'клан'), ('ALLIANCE', 'альянс')], max_length=32),
         ),
         migrations.AlterField(
-            model_name='event',
-            name='unit',
-            field=models.CharField(choices=[('TIME', 'за минут(а)'), ('THING', 'за штук(а)'), ('VISIT', 'за визит(ы)')], max_length=32),
-        ),
-        migrations.AlterField(
             model_name='eventattendance',
             name='type',
             field=models.CharField(choices=[('FULL', 'присутствовал'), ('PARTIAL', 'опоздал'), ('ABSENT', 'отсутствовал')], default='ABSENT', max_length=32),
@@ -68,11 +63,6 @@ class Migration(migrations.Migration):
             model_name='eventtemplate',
             name='type',
             field=models.CharField(choices=[('CHAIN', 'чейн'), ('ONCE', 'разовый'), ('AWAKENED', 'пробужденный'), ('TOI', 'ТОИ'), ('VEORA', 'веора'), ('SIEGE', 'осада'), ('CLUSTER', 'кластер'), ('CLAN', 'клан'), ('ALLIANCE', 'альянс')], max_length=32),
-        ),
-        migrations.AlterField(
-            model_name='eventtemplate',
-            name='unit',
-            field=models.CharField(choices=[('TIME', 'за минут(а)'), ('THING', 'за штук(а)'), ('VISIT', 'за визит(ы)')], max_length=32),
         ),
         migrations.AddConstraint(
             model_name='eventattendance',

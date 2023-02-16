@@ -22,7 +22,7 @@
     "pk": 2,
     "fields": {
         "type": "AWAKENED",
-        "unit": "THING",
+        "unit": "BOSS",
         "capacity": 1,
         "cost": 50,
         "penalty": 50,

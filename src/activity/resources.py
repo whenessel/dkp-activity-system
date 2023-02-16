@@ -31,11 +31,11 @@ class CommonEventAttendanceResource(resources.ModelResource):
         fields = ('member_id', 'member_names', 'total',
               'chain', 'once', 'awakened', 'toi',
               'veora', 'siege', 'cluster', 'clan',
-              'alliance', 'total_reward', 'once_by_qty', 'awakened_by_qty')
+              'alliance', 'total_reward')
         export_order = ('member_id', 'member_names', 'total',
               'chain', 'once', 'awakened', 'toi',
               'veora', 'siege', 'cluster', 'clan',
-              'alliance', 'total_reward', 'once_by_qty', 'awakened_by_qty')
+              'alliance', 'total_reward')
 
     def export(self, queryset=None, *args, **kwargs):
         if queryset is None:
@@ -46,24 +46,26 @@ class CommonEventAttendanceResource(resources.ModelResource):
             .order_by('member_id') \
             .annotate(member_names=StringAgg('member_display_name', ',', distinct=True)) \
             .values('member_id', 'member_names') \
-            .annotate(total=Count('event_id', distinct=True),
-                      chain=Count('event_id', distinct=True, filter=Q(event__type=EventType.CHAIN)),
-                      once=Count('event_id', distinct=True, filter=Q(event__type=EventType.ONCE)),
-                      awakened=Count('event_id', distinct=True, filter=Q(event__type=EventType.AWAKENED)),
-                      toi=Count('event_id', distinct=True, filter=Q(event__type=EventType.TOI)),
-                      veora=Count('event_id', distinct=True, filter=Q(event__type=EventType.VEORA)),
-                      siege=Count('event_id', distinct=True, filter=Q(event__type=EventType.SIEGE)),
-                      cluster=Count('event_id', distinct=True, filter=Q(event__type=EventType.CLUSTER)),
-                      clan=Count('event_id', distinct=True, filter=Q(event__type=EventType.CLAN)),
-                      alliance=Count('event_id', distinct=True, filter=Q(event__type=EventType.ALLIANCE)),
-                      total_reward=Sum('reward'),
-                      once_by_qty=Sum('event__quantity', filter=Q(event__type=EventType.ONCE), default=0),
-                      awakened_by_qty=Sum('event__quantity', filter=Q(event__type=EventType.AWAKENED), default=0),
-                      ) \
+            .annotate(
+                chain=Count('event_id', distinct=True, filter=Q(event__type=EventType.CHAIN)),
+                once=Sum('event__quantity', filter=Q(event__type=EventType.ONCE), default=0),
+                awakened=Sum('event__quantity', filter=Q(event__type=EventType.AWAKENED), default=0),
+                toi=Count('event_id', distinct=True, filter=Q(event__type=EventType.TOI)),
+                veora=Count('event_id', distinct=True, filter=Q(event__type=EventType.VEORA)),
+                siege=Count('event_id', distinct=True, filter=Q(event__type=EventType.SIEGE)),
+                cluster=Count('event_id', distinct=True, filter=Q(event__type=EventType.CLUSTER)),
+                clan=Count('event_id', distinct=True, filter=Q(event__type=EventType.CLAN)),
+                alliance=Count('event_id', distinct=True, filter=Q(event__type=EventType.ALLIANCE)),
+                total_reward=Sum('reward'),
+            ) \
+            .annotate(
+                total=F('chain')+F('once')+F('awakened')+F('toi')+
+                      F('veora')+F('siege')+F('cluster')+F('clan')+F('alliance')
+            ) \
             .values('member_id', 'member_names', 'total',
                     'chain', 'once', 'awakened', 'toi',
                     'veora', 'siege', 'cluster', 'clan',
-                    'alliance', 'total_reward', 'once_by_qty', 'awakened_by_qty')
+                    'alliance', 'total_reward')
 
         queryset = list(map(convert, queryset))
         return super().export(queryset=queryset)
