@@ -244,12 +244,7 @@ class EventItem(Event):
         self._member_attendances.pop(member.id, None)
         return True
 
-    async def do_finish(self, quantity: int) -> None:
-
-        self.quantity = quantity
-        self.status = EventStatus.FINISHED
-        self.save()
-
+    def perform_attendance_reward(self) -> None:
         attend_member, created = EventAttendance.objects.get_or_create(
             event=self,
             member_id=self.member_id,
@@ -268,6 +263,14 @@ class EventItem(Event):
             for member_attendance in self.event_attendances.all():
                 member_attendance.compute_reward()
                 member_attendance.save()
+
+    async def do_finish(self, quantity: int) -> None:
+
+        self.quantity = quantity
+        self.status = EventStatus.FINISHED
+        self.save()
+
+        self.perform_attendance_reward()
 
     async def do_cancel(self) -> None:
         self.status = EventStatus.CANCELED
@@ -625,7 +628,10 @@ class EventCog(commands.Cog):
     @app_commands.guild_only()
     async def event_admin_moderator_show(self, ctx: GuildEveContext) -> None:
         event_moderators = EventModerator.objects.filter(guild_id=ctx.guild.id).values_list('member_id', flat=True)
-        await ctx.send(f'Пока не работает :ghost:', reference=ctx.message)
+        members = ctx.guild.members
+        moderators = filter(lambda member: member.id in event_moderators, members)
+        await ctx.send(f'Наши любимчики :heart_exclamation:\n{", ".join([member.mention for member in moderators])}',
+                       reference=ctx.message)
 
     @event_admin_template.command(
         name='add',
@@ -753,10 +759,12 @@ class EventCog(commands.Cog):
             embed = event_embed(event=event)
             await event_message.edit(content=None, embed=embed, view=None)
 
-            await ctx.send(f'{member.mention} '
-                           f'добавлен к событию **{event.id}** '
-                           f'как **{AttendanceType[type].label.upper()}**\n'
-                           f'Событие: {event_message.jump_url}', reference=event_message)
+            # await ctx.send(f'{member.mention} '
+            #                f'добавлен к событию **{event.id}** '
+            #                f'как **{AttendanceType[type].label.upper()}**\n'
+            #                f'Событие: {event_message.jump_url}', reference=event_message)
+            await ctx.send(f'Добавлен участник {member.mention} к событию **{event.id} ({event.title})**\n'
+                           f'Перейти к событию: {event_message.jump_url}', reference=event_message)
         except (EventItem.DoesNotExist, Event.DoesNotExist):
             await ctx.send(f'\N{SKULL AND CROSSBONES} Событие с номером **{event}** не найдено.', ephemeral=True)
 
@@ -771,7 +779,7 @@ class EventCog(commands.Cog):
     @checks.event_channel_only()
     @checks.event_moderator_only()
     @app_commands.describe(
-        member='Участник, которого надо добавить к событию',
+        member='Участник, которого надо удалить из события',
         event='Номер события'
     )
     async def event_mod_member_del(self, ctx: GuildEveContext, member: discord.Member, event: int) -> None:
@@ -783,9 +791,12 @@ class EventCog(commands.Cog):
             embed = event_embed(event=event)
             await event_message.edit(content=None, embed=embed, view=None)
 
-            await ctx.send(f'{member.mention} '
-                           f'удален из события **{event.id}**\n'
-                           f'Событие: {event_message.jump_url}', reference=event_message)
+            # await ctx.send(f'{member.mention} '
+            #                f'удален из события **{event.id}**\n'
+            #                f'Событие: {event_message.jump_url}', reference=event_message)
+            await ctx.send(f'Удален участник {member.mention} из события **{event.id} ({event.title})**\n'
+                           f'Перейти к событию: {event_message.jump_url}', reference=event_message)
+
         except (EventItem.DoesNotExist, Event.DoesNotExist):
             await ctx.send(f'\N{SKULL AND CROSSBONES} Событие с номером **{event}** не найдено.', ephemeral=True)
 
@@ -832,6 +843,33 @@ class EventCog(commands.Cog):
                                  description=f'Статистика за период с {start_date} по {end_date}')
 
         await ctx.send(f'Все готово!', file=stat_file, ephemeral=True)
+
+    @event_mod.command(
+        name='sync',
+        description='Синхронизация данных события с базой',
+        with_app_command=True,
+        invoke_without_command=False
+    )
+    @commands.guild_only()
+    @app_commands.guild_only()
+    @checks.event_channel_only()
+    @checks.event_moderator_only()
+    async def event_sync(self, ctx: GuildEveContext, event: int) -> None:
+        try:
+            event: EventItem = EventItem.objects.get(id=event)
+            event.perform_attendance_reward()
+
+            event_message = await event.fetch_message()
+            embed = event_embed(event=event)
+
+            await event_message.edit(content=None, embed=embed, view=None)
+
+            await ctx.send(f'**Синхронизировано**\n'
+                           f'Событие: **{event.title}**\n'
+                           f'Перейти к событию: {event_message.jump_url}', reference=event_message, ephemeral=True)
+
+        except (EventItem.DoesNotExist, Event.DoesNotExist):
+            await ctx.send(f'\N{SKULL AND CROSSBONES} Событие с номером **{event}** не найдено.', ephemeral=True)
 
     @commands.hybrid_group(
         name='event',
