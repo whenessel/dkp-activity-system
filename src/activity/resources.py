@@ -23,8 +23,6 @@ class CommonEventAttendanceResource(resources.ModelResource):
     clan = fields.Field(attribute='clan', column_name='clan', widget=widgets.IntegerWidget())
     alliance = fields.Field(attribute='alliance', column_name='alliance', widget=widgets.IntegerWidget())
     total_reward = fields.Field(attribute='total_reward', column_name='total_reward', widget=widgets.IntegerWidget())
-    once_by_qty = fields.Field(attribute='once_by_qty', column_name='once_by_qty', widget=widgets.IntegerWidget())
-    awakened_by_qty = fields.Field(attribute='awakened_by_qty', column_name='awakened_by_qty', widget=widgets.IntegerWidget())
 
     class Meta:
         model = EventAttendance
@@ -48,7 +46,7 @@ class CommonEventAttendanceResource(resources.ModelResource):
             .values('member_id', 'member_names') \
             .annotate(
                 chain=Count('event_id', distinct=True, filter=Q(event__type=EventType.CHAIN)),
-                once=Sum('event__quantity', filter=Q(event__type=EventType.ONCE), default=0),
+                once=Count('event_id', distinct=True, filter=Q(event__type=EventType.ONCE)),
                 awakened=Sum('event__quantity', filter=Q(event__type=EventType.AWAKENED), default=0),
                 toi=Count('event_id', distinct=True, filter=Q(event__type=EventType.TOI)),
                 veora=Count('event_id', distinct=True, filter=Q(event__type=EventType.VEORA)),
