@@ -84,13 +84,18 @@ class Event(models.Model):
     def _reward(self, attend_type: AttendanceType) -> int:
         reward = self.cost * float(self.quantity) / float(self.capacity)
         extra = float(0)
+
         if self.is_military:
             extra += float(self.military * reward) / 100
+
         if self.is_overnight:
             extra += float(self.overnight * reward) / 100
+
         reward += extra
+
         if attend_type == AttendanceType.PARTIAL:
             reward = reward * float(self.penalty / 100)
+
         reward = int(round(reward, 1))
         return reward
 
