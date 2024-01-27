@@ -1,24 +1,24 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING, Callable, TypeVar
+import typing as t
+
 import discord
 from discord import app_commands
 from discord.ext import commands
-from evebot.bot import EveBot, EveContext
-from activity.models import *
+
+from activity.models import EventChannel, EventModerator
 from evebot.exceptions import NotEventChannel, NotEventModerator
 
+if t.TYPE_CHECKING:
+    ...
 
-if TYPE_CHECKING:
-    from evebot.context import GuildEveContext, EveContext
 
-
-T = TypeVar('T')
+T = t.TypeVar("T")
 
 
 def event_channel_only():
-
     async def predicate(interaction: discord.Interaction) -> bool:
-        event_channels = EventChannel.objects.filter(guild_id=interaction.guild.id, channel_id=interaction.channel.id)
+        event_channels = EventChannel.objects.filter(
+            guild_id=interaction.guild.id, channel_id=interaction.channel.id
+        )
 
         if not event_channels.exists():
             raise NotEventChannel
@@ -29,9 +29,10 @@ def event_channel_only():
 
 
 def event_moderator_only():
-
     async def predicate(interaction: discord.Interaction) -> bool:
-        event_moderator = EventModerator.objects.filter(guild_id=interaction.guild.id, member_id=interaction.user.id)
+        event_moderator = EventModerator.objects.filter(
+            guild_id=interaction.guild.id, member_id=interaction.user.id
+        )
 
         if not event_moderator.exists():
             raise NotEventModerator

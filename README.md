@@ -4,6 +4,7 @@
 
 ### Сборка
 ```shell
+
 docker build -f compose/Dockerfile -t dkp .
 
 ```

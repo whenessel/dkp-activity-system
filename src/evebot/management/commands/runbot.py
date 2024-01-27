@@ -7,8 +7,6 @@ from datetime import datetime
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-
-
 from django.utils import autoreload
 from django.utils.regex_helper import _lazy_re_compile
 
@@ -70,7 +68,6 @@ class Command(BaseCommand):
     def inner_run(self, *args, **options):
         autoreload.raise_last_exception()
 
-        threading = options["use_threading"]
         shutdown_message = options.get("shutdown_message", "")
         quit_command = "CTRL-BREAK" if sys.platform == "win32" else "CONTROL-C"
 
@@ -116,4 +113,3 @@ class Command(BaseCommand):
             if shutdown_message:
                 self.stdout.write(shutdown_message)
             sys.exit(0)
-

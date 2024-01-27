@@ -1,51 +1,34 @@
-from __future__ import annotations
-
-import os
-
-from discord.ext import commands
-import discord
-
 import datetime
 import logging
-import traceback
-import aiohttp
-import sys
+import os
 import platform
-from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, Coroutine, Iterable, Optional, Union, List, overload
+import sys
+import traceback
+import typing as t
 from collections import Counter, defaultdict
 
+import aiohttp
+import discord
+from discord.ext import commands
 from django.conf import settings
 
 from evebot.context import EveContext, GuildEveContext
 from evebot.exceptions import NotEventChannel, NotEventModerator
-from evebot.utils.functional import search_cogs
+from evebot.utils.functional import find_cogs, search_cogs
 from evebot.utils.storage import PersistJsonFile
 
-
-if TYPE_CHECKING:
-    ...
-
-
 description = """
-Hello! I am a "EVE" bot to provide some nice utilities.
+Hello! I am a "EVE" bot to provide some nice features.
 """
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 discord.utils.setup_logging(level=logging.INFO, root=True)
 
-initial_extensions = (
-    'evebot.cogs.admin',
-    'evebot.cogs.common',
-    # 'evebot.cogs.experiment',
-    'evebot.cogs.event',
 
-)
-
-
-def _prefix_callable(bot: EveBot, msg: discord.Message):
+def _prefix_callable(bot: "EveBot", msg: discord.Message):
     user_id = bot.user.id
-    base = [f'<@!{user_id}> ', f'<@{user_id}> ']
+    base = [f"<@!{user_id}> ", f"<@{user_id}> "]
     if msg.guild is None:
         base.append(settings.EVE_PREFIX)
     else:
@@ -54,9 +37,9 @@ def _prefix_callable(bot: EveBot, msg: discord.Message):
 
 
 class ProxyObject(discord.Object):
-    def __init__(self, guild: Optional[discord.abc.Snowflake]):
+    def __init__(self, guild: t.Optional[discord.abc.Snowflake]):
         super().__init__(id=0)
-        self.guild: Optional[discord.abc.Snowflake] = guild
+        self.guild: t.Optional[discord.abc.Snowflake] = guild
 
 
 class EveBot(commands.AutoShardedBot):
@@ -64,19 +47,24 @@ class EveBot(commands.AutoShardedBot):
     command_stats: Counter[str]
     socket_stats: Counter[str]
     command_types_used: Counter[bool]
-    logging_handler: Any
+    logging_handler: t.Any
     bot_app_info: discord.AppInfo
-    old_tree_error = Callable[[discord.Interaction, discord.app_commands.AppCommandError], Coroutine[Any, Any, None]]
+    old_tree_error = t.Callable[
+        [discord.Interaction, discord.app_commands.AppCommandError],
+        t.Coroutine[t.Any, t.Any, None],
+    ]
 
-    session: Optional[aiohttp.ClientSession]
+    session: t.Optional[aiohttp.ClientSession] = None
 
     prefixes: PersistJsonFile[list[str]]
     blacklist: PersistJsonFile[bool]
 
-    uptime: Optional[datetime.datetime]
+    uptime: t.Optional[datetime.datetime]
 
     def __init__(self):
-        allowed_mentions = discord.AllowedMentions(roles=True, everyone=True, users=True)
+        allowed_mentions = discord.AllowedMentions(
+            roles=True, everyone=True, users=True
+        )
         # intents = discord.Intents(
         #     guilds=True,
         #     members=True,
@@ -95,7 +83,7 @@ class EveBot(commands.AutoShardedBot):
             pm_help=None,
             help_attrs=dict(hidden=True),
             chunk_guilds_at_startup=False,
-            heartbeat_timeout=150.0,
+            heartbeat_timeout=120.0,
             allowed_mentions=allowed_mentions,
             intents=intents,
             enable_debug_events=True,
@@ -103,37 +91,55 @@ class EveBot(commands.AutoShardedBot):
         self.client_id: str = settings.EVE_CLIENT_ID
         self.resumes: defaultdict[int, list[datetime.datetime]] = defaultdict(list)
         self.identifies: defaultdict[int, list[datetime.datetime]] = defaultdict(list)
-        self.spam_control = commands.CooldownMapping.from_cooldown(10, 12.0, commands.BucketType.user)
+        self.spam_control = commands.CooldownMapping.from_cooldown(
+            10, 30.0, commands.BucketType.user
+        )
         self._auto_spam_count = Counter()
 
     async def setup_hook(self) -> None:
         self.session = aiohttp.ClientSession()
         # guild_id: list
-        self.prefixes: PersistJsonFile[list[str]] = PersistJsonFile(settings.EVE_STORAGE_DIR / 'prefixes.json')
+        self.prefixes: PersistJsonFile[list[str]] = PersistJsonFile(
+            settings.SECRET_ROOT / "prefixes.json"
+        )
 
         # guild_id and user_id mapped to True
         # these are users and guilds globally blacklisted
         # from using the bot
-        self.blacklist: PersistJsonFile[bool] = PersistJsonFile(settings.EVE_STORAGE_DIR / 'blacklist.json')
+        self.blacklist: PersistJsonFile[bool] = PersistJsonFile(
+            settings.SECRET_ROOT / "blacklist.json"
+        )
 
         self.bot_app_info = await self.application_info()
         self.owner_id = self.bot_app_info.owner.id
 
-        log.info('Extension loading extensions...')
-        for extension in initial_extensions:
+        logger.info("Search installed extensions...")
+        installed_extensions = find_cogs(settings.INSTALLED_APPS)
+
+        logger.info("Extension loading extensions...")
+        for installed_ext in installed_extensions:
+            logger.info(f"Loading extension {installed_ext}...")
             try:
-                await self.load_extension(extension)
-                log.info(f'Extension loaded: "{extension}"')
-            except Exception as e:
-                log.exception(f'Failed to load extension {extension}.', exc_info=True)
+                await self.load_extension(installed_ext)
+                logger.info(f'Extension loaded: "{installed_ext}"')
+            except Exception as exc:
+                logger.error(
+                    f"Failed to load extension {installed_ext}.", exc_info=False
+                )
+                logger.debug(
+                    f"Failed to load extension {installed_ext} with {exc}",
+                    exc_info=True,
+                )
+            # await self.load_extension(installed_ext)
 
         if settings.EVE_SYNC_COMMANDS_GLOBALLY:
-            log.info('Syncing commands globally...')
+            logger.info("Syncing commands globally...")
             await self.tree.sync()
 
     @property
     def prefix(self) -> str:
         return settings.EVE_PREFIX
+
     @property
     def owner(self) -> discord.User:
         return self.bot_app_info.owner
@@ -150,35 +156,43 @@ class EveBot(commands.AutoShardedBot):
             for index in reversed(to_remove):
                 del dates[index]
 
-    async def _call_before_identify_hook(self, shard_id: Optional[int], *, initial: bool = False) -> None:
+    async def _call_before_identify_hook(
+        self, shard_id: t.Optional[int], *, initial: bool = False
+    ) -> None:
         self._clear_gateway_data()
         self.identifies[shard_id].append(discord.utils.utcnow())
         await super().before_identify_hook(shard_id, initial=initial)
 
-    async def on_command_error(self, ctx: EveContext, error: commands.CommandError) -> None:
+    async def on_command_error(
+        self, ctx: EveContext, error: commands.CommandError
+    ) -> None:
         if isinstance(error, commands.NoPrivateMessage):
-            await ctx.author.send('This command cannot be used in private messages.')
+            await ctx.author.send("This command cannot be used in private messages.")
             # log.error("This command cannot be used in private messages.")
         elif isinstance(error, commands.DisabledCommand):
-            await ctx.author.send('Sorry. This command is disabled and cannot be used.')
+            await ctx.author.send("Sorry. This command is disabled and cannot be used.")
             # log.error("Sorry. This command is disabled and cannot be used.")
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
             if not isinstance(original, discord.HTTPException):
-                log.exception(f'In {ctx.command.qualified_name}:', exc_info=original)
+                logger.exception(f"In {ctx.command.qualified_name}:", exc_info=original)
         elif isinstance(error, commands.ArgumentParsingError):
             await ctx.send(str(error))
 
-        log.error(str(error))
+        logger.error(str(error))
 
-    def get_guild_prefixes(self, guild: Optional[discord.abc.Snowflake], *, local_inject=_prefix_callable) -> list[str]:
+    def get_guild_prefixes(
+        self, guild: t.Optional[discord.abc.Snowflake], *, local_inject=_prefix_callable
+    ) -> list[str]:
         proxy_msg = ProxyObject(guild)
         return local_inject(self, proxy_msg)  # type: ignore  # lying
 
     def get_raw_guild_prefixes(self, guild_id: int) -> list[str]:
         return self.prefixes.get(guild_id, settings.EVE_PREFIX)
 
-    async def set_guild_prefixes(self, guild: discord.abc.Snowflake, prefixes: list[str]) -> None:
+    async def set_guild_prefixes(
+        self, guild: discord.abc.Snowflake, prefixes: list[str]
+    ) -> None:
         if len(prefixes) == 0:
             await self.prefixes.put(guild.id, [])
         elif len(prefixes) > 10:
@@ -197,7 +211,7 @@ class EveBot(commands.AutoShardedBot):
 
     async def query_member_named(
         self, guild: discord.Guild, argument: str, *, cache: bool = False
-    ) -> Optional[discord.Member]:
+    ) -> t.Optional[discord.Member]:
         """Queries a member by their name, name + discrim, or nickname.
 
         Parameters
@@ -214,15 +228,21 @@ class EveBot(commands.AutoShardedBot):
         Optional[Member]
             The member matching the query or None if not found.
         """
-        if len(argument) > 5 and argument[-5] == '#':
-            username, _, discriminator = argument.rpartition('#')
+        if len(argument) > 5 and argument[-5] == "#":
+            username, _, discriminator = argument.rpartition("#")
             members = await guild.query_members(username, limit=100, cache=cache)
-            return discord.utils.get(members, name=username, discriminator=discriminator)
+            return discord.utils.get(
+                members, name=username, discriminator=discriminator
+            )
         else:
             members = await guild.query_members(argument, limit=100, cache=cache)
-            return discord.utils.find(lambda m: m.name == argument or m.nick == argument, members)
+            return discord.utils.find(
+                lambda m: m.name == argument or m.nick == argument, members
+            )
 
-    async def get_or_fetch_member(self, guild: discord.Guild, member_id: int) -> Optional[discord.Member]:
+    async def get_or_fetch_member(
+        self, guild: discord.Guild, member_id: int
+    ) -> t.Optional[discord.Member]:
         """Looks up a member in cache or fetches if not found.
 
         Parameters
@@ -242,7 +262,7 @@ class EveBot(commands.AutoShardedBot):
         if member is not None:
             return member
 
-        shard: discord.ShardInfo = self.get_shard(guild.shard_id)  # type: ignore  # will never be None
+        shard: discord.ShardInfo = self.get_shard(guild.shard_id)
         if shard.is_ws_ratelimited():
             try:
                 member = await guild.fetch_member(member_id)
@@ -256,7 +276,9 @@ class EveBot(commands.AutoShardedBot):
             return None
         return members[0]
 
-    async def resolve_member_ids(self, guild: discord.Guild, member_ids: Iterable[int]) -> AsyncIterator[discord.Member]:
+    async def resolve_member_ids(
+        self, guild: discord.Guild, member_ids: t.Iterable[int]
+    ) -> t.AsyncIterator[discord.Member]:
         """Bulk resolves member IDs to member instances, if possible.
 
         Members that can't be resolved are discarded from the list.
@@ -288,7 +310,7 @@ class EveBot(commands.AutoShardedBot):
 
         total_need_resolution = len(needs_resolution)
         if total_need_resolution == 1:
-            shard: discord.ShardInfo = self.get_shard(guild.shard_id)  # type: ignore  # will never be None
+            shard: discord.ShardInfo = self.get_shard(guild.shard_id)
             if shard.is_ws_ratelimited():
                 try:
                     member = await guild.fetch_member(needs_resolution[0])
@@ -297,54 +319,65 @@ class EveBot(commands.AutoShardedBot):
                 else:
                     yield member
             else:
-                members = await guild.query_members(limit=1, user_ids=needs_resolution, cache=True)
+                members = await guild.query_members(
+                    limit=1, user_ids=needs_resolution, cache=True
+                )
                 if members:
                     yield members[0]
         elif total_need_resolution <= 100:
             # Only a single resolution call needed here
-            resolved = await guild.query_members(limit=100, user_ids=needs_resolution, cache=True)
+            resolved = await guild.query_members(
+                limit=100, user_ids=needs_resolution, cache=True
+            )
             for member in resolved:
                 yield member
         else:
             # We need to chunk these in bits of 100...
             for index in range(0, total_need_resolution, 100):
                 to_resolve = needs_resolution[index : index + 100]
-                members = await guild.query_members(limit=100, user_ids=to_resolve, cache=True)
+                members = await guild.query_members(
+                    limit=100, user_ids=to_resolve, cache=True
+                )
                 for member in members:
                     yield member
 
     async def on_ready(self):
-        if not hasattr(self, 'uptime'):
+        if not hasattr(self, "uptime"):
             self.uptime = discord.utils.utcnow()
 
-        log.info(f'Discord.py API version: {discord.__version__}')
-        log.info(f'Python version: {platform.python_version()}')
-        log.info(f'Running on: {platform.system()} {platform.release()} ({os.name})')
-        log.info(f'Ready: logged in as "{self.user}" (ID: {self.user.id})')
+        logger.info(f"Discord.py API version: {discord.__version__}")
+        logger.info(f"Python version: {platform.python_version()}")
+        logger.info(f"Running on: {platform.system()} {platform.release()} ({os.name})")
+        logger.info(f'Ready: logged in as "{self.user}" (ID: {self.user.id})')
 
     async def on_shard_resumed(self, shard_id: int):
-        log.info('Shard ID %s has resumed...', shard_id)
+        logger.info("Shard ID %s has resumed...", shard_id)
         self.resumes[shard_id].append(discord.utils.utcnow())
 
-    async def log_spammer(self, ctx: EveContext,
-                          message: discord.Message, retry_after: float, *, autoblock: bool = False):
-        guild_name = getattr(ctx.guild, 'name', 'No Guild (DMs)')
-        guild_id = getattr(ctx.guild, 'id', None)
-        fmt = 'User %s (ID %s) in guild %r (ID %s) spamming, retry_after: %.2fs'
-        log.warning(fmt, message.author, message.author.id, guild_name, guild_id, retry_after)
-        if not autoblock:
+    async def log_spammer(
+        self,
+        ctx: EveContext,
+        message: discord.Message,
+        retry_after: float,
+        *,
+        auto_block: bool = False,
+    ):
+        guild_name = getattr(ctx.guild, "name", "No Guild (DMs)")
+        guild_id = getattr(ctx.guild, "id", None)
+        fmt = "User %s (ID %s) in guild %r (ID %s) spamming, retry_after: %.2fs"
+        logger.warning(
+            fmt, message.author, message.author.id, guild_name, guild_id, retry_after
+        )
+        if not auto_block:
             return
 
-        # wh = self.stats_webhook
-        # embed = discord.Embed(title='Auto-blocked Member', colour=0xDDA453)
-        # embed.add_field(name='Member', value=f'{message.author} (ID: {message.author.id})', inline=False)
-        # embed.add_field(name='Guild Info', value=f'{guild_name} (ID: {guild_id})', inline=False)
-        # embed.add_field(name='Channel Info', value=f'{message.channel} (ID: {message.channel.id}', inline=False)
-        # embed.timestamp = discord.utils.utcnow()
-        # return await wh.send(embed=embed)
-
-    async def get_context(self, origin: Union[discord.Interaction, discord.Message],
-                          /, *, cls=EveContext) -> EveContext:
+    async def get_context(
+        self,
+        origin: t.Union[discord.Interaction, discord.Message],
+        /,
+        *,
+        cls=EveContext,
+    ) -> EveContext:
         return await super().get_context(origin, cls=cls)
 
     async def process_commands(self, message: discord.Message):
@@ -368,7 +401,7 @@ class EveBot(commands.AutoShardedBot):
             if self._auto_spam_count[author_id] >= 5:
                 await self.add_to_blacklist(author_id)
                 del self._auto_spam_count[author_id]
-                await self.log_spammer(ctx, message, retry_after, autoblock=True)
+                await self.log_spammer(ctx, message, retry_after, auto_block=True)
             else:
                 await self.log_spammer(ctx, message, retry_after)
             return
@@ -388,4 +421,5 @@ class EveBot(commands.AutoShardedBot):
 
     async def close(self) -> None:
         await super().close()
-        await self.session.close()
+        if self.session:
+            await self.session.close()

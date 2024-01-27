@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 /tmp/
 /docker-compose.env
+/dev-resources/
+/dev-scripts/
