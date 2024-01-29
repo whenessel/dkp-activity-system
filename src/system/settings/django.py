@@ -50,7 +50,7 @@ MIDDLEWARE = [
 ]
 
 
-ROOT_URLCONF = 'system.urls'
+ROOT_URLCONF = "system.urls"
 
 
 TEMPLATES = [

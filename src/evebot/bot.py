@@ -14,7 +14,6 @@ from evebot.context import EveContext
 from evebot.utils.functional import find_cogs
 from evebot.utils.storage import PersistJsonFile
 
-
 description = """
 Hello! I am a "EVE" bot to provide some nice features.
 """

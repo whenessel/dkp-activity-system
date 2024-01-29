@@ -10,6 +10,14 @@ x-dkp-docker: &dkp-activity-system
 
 
 services:
+  eve-web:
+    <<: *dkp-activity-system
+    container_name: eve-web
+    restart: always
+    ports:
+      - 8000:8000
+    depends_on:
+      - eve-postgres
 
   eve-bot:
     <<: *dkp-activity-system

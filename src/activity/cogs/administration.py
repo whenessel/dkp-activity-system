@@ -6,8 +6,8 @@ from discord import app_commands
 from discord.ext import commands
 
 from activity.models import EventChannel, EventModerator
-from .base import BaseEventCog
 
+from .base import BaseEventCog
 
 if t.TYPE_CHECKING:
     from evebot.bot import EveBot

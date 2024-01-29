@@ -14,7 +14,6 @@ from activity.models import Event, EventAttendance, EventChannel, EventModerator
 from evebot.bot import EveBot, EveContext
 from evebot.utils.enums import EmojiEnumMIxin
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -27,33 +26,6 @@ class MemberReactions(
     FOUR = enum.auto(), "4️⃣", AttendanceServer.FOUR
     FIVE = enum.auto(), "5️⃣", AttendanceServer.FIVE
     SIX = enum.auto(), "6️⃣", AttendanceServer.SIX
-
-
-class QuantityModal(discord.ui.Modal):
-    quantity = discord.ui.TextInput(
-        label="Количество минут или количество боссов",
-        placeholder="1",
-        required=True,
-        style=discord.TextStyle.short,
-    )
-
-    def __init__(self, cog: "BaseEventCog", event: "EventItem"):
-        self.cog = cog
-        self.event = event
-        super().__init__(title=f"{event.title} ({event.id})", timeout=None)
-
-        self.quantity.placeholder = str(event.capacity)
-
-    async def on_submit(self, interaction: discord.Interaction) -> None:
-        await interaction.response.defer()
-        quantity = int(self.quantity.value)
-        await self.event.do_finish(quantity=quantity)
-        embed = event_embed(event=self.event)
-        message = await self.event.fetch_message()
-        await self.event.clean_reactions()
-        await interaction.followup.edit_message(
-            message_id=message.id, embed=embed, view=None
-        )
 
 
 def event_template_embed(title: str, description: str) -> discord.Embed:
@@ -323,35 +295,6 @@ class BaseEventCog(commands.Cog):
 
         self._event_channels_cache: dict[int, dict] = {}
         self.cleanup_event_channels_cache.start()
-
-        try:
-            self.ctx_menu_event_finish = app_commands.ContextMenu(
-                name="Завершить событие", callback=self.context_event_finish
-            )
-            self.bot.tree.add_command(self.ctx_menu_event_finish)
-        except CommandAlreadyRegistered:
-            ...
-
-    async def context_event_finish(
-        self, interaction: discord.Interaction, message: discord.Message
-    ):
-        # We have to make sure the following query
-        # takes <3s in order to meet the response window
-        event = await self.get_event_for_message(message_id=message.id)
-        if not event:
-            await interaction.response.send_message(
-                ":face_with_spiral_eyes: Упс! Тут нет события!", ephemeral=True
-            )
-            return False
-        if event.status in [EventStatus.FINISHED, EventStatus.CANCELED]:
-            await interaction.response.send_message(
-                f":face_with_spiral_eyes: "
-                f"Упс! Событие уже {event.get_status_display()}",
-                ephemeral=True,
-            )
-            return False
-
-        await interaction.response.send_modal(QuantityModal(cog=self, event=event))
 
     @tasks.loop(hours=1.0)
     async def cleanup_event_message_cache(self):

@@ -6,6 +6,7 @@ from discord.ext import commands
 
 if t.TYPE_CHECKING:
     from aiohttp import ClientSession
+
     from evebot.bot import EveBot
 
 
