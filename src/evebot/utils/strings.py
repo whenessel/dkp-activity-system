@@ -6,7 +6,7 @@ def get_shortened_string(length: int, start: int, string: str) -> str:
     if full_length <= 100:
         return string
 
-    item_id, _, remaining = string.partition(' - ')
+    item_id, _, remaining = string.partition(" - ")
     start_index = len(item_id) + 3
     max_remaining_length = 100 - start_index
 
@@ -17,7 +17,7 @@ def get_shortened_string(length: int, start: int, string: str) -> str:
     # If the match is near the beginning then just extend it to the end
     if end < 100:
         if full_length > 100:
-            return string[:99] + '…'
+            return string[:99] + "…"
         return string[:100]
 
     has_end = end < full_length

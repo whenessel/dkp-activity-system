@@ -1,0 +1,73 @@
+name: "Documentation"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+
+permissions:
+  id-token: write
+  pages: write
+
+env:
+  # Custom Writerside location
+  LOCATION: doc-src
+  # Name of module and id separated by a slash
+  INSTANCE: Writerside/dkp
+  # Replace XX with the ID of the instance in capital letters
+  ARTIFACT: webHelpDKP-all.zip
+  # Docker image version
+  DOCKER_VERSION: 232.10275
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+      - name: "Build Writerside docs using Docker"
+        uses: JetBrains/writerside-github-action@v4
+        with:
+          location: ${{ env.LOCATION }}
+          instance: ${{ env.INSTANCE }}
+          artifact: ${{ env.ARTIFACT }}
+          docker-version: ${{ env.DOCKER_VERSION }}
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: |
+            artifacts/${{ env.ARTIFACT }}
+          retention-days: 7
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    # Requires build job results
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Download artifact"
+        uses: actions/download-artifact@v3
+        with:
+          name: docs
+
+      - name: "Unzip artifact"
+        run: unzip -O UTF-8 -qq ${{ env.ARTIFACT }} -d docs
+
+      - name: "Setup Pages"
+        uses: actions/configure-pages@v2
+
+      - name: "Upload artifact"
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: docs
+
+      - name: "Deploy to GitHub Pages"
+        id: deployment
+        uses: actions/deploy-pages@v1
