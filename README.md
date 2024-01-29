@@ -1,5 +1,5 @@
 [![image](https://img.shields.io/github/v/release/whenessel/dkp-activity-system?logo=GitHub)](https://github.com/whenessel/dkp-activity-system/releases)
-
+[![image](https://img.shields.io/docker/v/whenessel/dkp-activity-system?logo=docker)](https://hub.docker.com/repository/docker/whenessel/dkp-activity-system/general)
 # DKP Activity System
 
 ## Запуск контейнера с ботом

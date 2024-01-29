@@ -1,0 +1,37 @@
+name: "Development build and publish"
+
+on:
+  push:
+    branches:
+      - "development"
+
+jobs:
+  docker-build:
+    name: "Docker Build"
+    runs-on: ubuntu-latest
+    needs: release-branch
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: "Set up QEMU"
+        uses: docker/setup-qemu-action@v2
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v2
+      - name: "Login to DockerHub Container Registry"
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: "Build and Push Image"
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: compose/Dockerfile
+          platforms: linux/amd64, linux/arm64
+          tags: docker.io/whenessel/dkp-activity-system:development
+          push: true
+          cache-from: type=registry,ref=docker.io/whenessel/dkp-activity-system:development
+      - name: "Tag Edge"
+        run: docker buildx imagetools create --tag whenessel/dkp-activity-system:edge whenessel/dkp-activity-system:development
