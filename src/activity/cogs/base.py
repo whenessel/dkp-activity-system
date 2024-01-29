@@ -1,25 +1,19 @@
-import datetime
 import enum
-import io
 import logging
-import platform
-import re
 import typing as t
 
 import discord
 from discord import app_commands
 from discord.app_commands.errors import CommandAlreadyRegistered
 from discord.ext import commands, tasks
-from django.db import transaction
 from django.db.models import Count
-from enum_properties import EnumProperties, p, s
+from enum_properties import EnumProperties, s
 
 from activity.choices import AttendanceServer, EventStatus
 from activity.models import Event, EventAttendance, EventChannel, EventModerator
-from activity.resources import CommonEventAttendanceResource
-from evebot.bot import EveBot, EveContext, GuildEveContext
-from evebot.utils import checks
+from evebot.bot import EveBot, EveContext
 from evebot.utils.enums import EmojiEnumMIxin
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,13 +41,6 @@ class QuantityModal(discord.ui.Modal):
         self.cog = cog
         self.event = event
         super().__init__(title=f"{event.title} ({event.id})", timeout=None)
-
-        # if self.event.unit == CapacityUnit.TIME:
-        #     self.quantity.label = f"Введите количество минут"
-        # elif self.event.unit == CapacityUnit.BOSS:
-        #     self.quantity.label = f"Введите количество боссов"
-        # elif self.event.unit == CapacityUnit.VISIT:
-        #     self.quantity.label = f"Введите количество посещений"
 
         self.quantity.placeholder = str(event.capacity)
 
@@ -460,7 +447,7 @@ class BaseEventCog(commands.Cog):
     async def cog_command_error(self, ctx: EveContext, error: Exception) -> None:
         logger.error(f'Error handled by "cog_command_error": {str(error)}')
         await ctx.send(
-            f"\N{SKULL AND CROSSBONES} Что-то пошло не так\n\n" f"> {str(error)}",
+            f"\N{SKULL AND CROSSBONES} " f"Что-то пошло не так\n\n" f"> {str(error)}",
             ephemeral=True,
         )
 

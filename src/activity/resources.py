@@ -5,7 +5,7 @@ from django.db.models import Count, Q
 from import_export import fields, resources, widgets
 
 from activity.choices import AttendanceServer, EventStatus
-from activity.models import Event, EventAttendance
+from activity.models import EventAttendance
 
 
 def convert(dictionary):

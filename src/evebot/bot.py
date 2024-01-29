@@ -2,8 +2,6 @@ import datetime
 import logging
 import os
 import platform
-import sys
-import traceback
 import typing as t
 from collections import Counter, defaultdict
 
@@ -12,16 +10,17 @@ import discord
 from discord.ext import commands
 from django.conf import settings
 
-from evebot.context import EveContext, GuildEveContext
-from evebot.exceptions import NotEventChannel, NotEventModerator
-from evebot.utils.functional import find_cogs, search_cogs
+from evebot.context import EveContext
+from evebot.utils.functional import find_cogs
 from evebot.utils.storage import PersistJsonFile
+
 
 description = """
 Hello! I am a "EVE" bot to provide some nice features.
 """
 
 logger = logging.getLogger(__name__)
+
 
 discord.utils.setup_logging(level=logging.INFO, root=True)
 
@@ -65,16 +64,6 @@ class EveBot(commands.AutoShardedBot):
         allowed_mentions = discord.AllowedMentions(
             roles=True, everyone=True, users=True
         )
-        # intents = discord.Intents(
-        #     guilds=True,
-        #     members=True,
-        #     bans=True,
-        #     emojis=True,
-        #     voice_states=True,
-        #     messages=True,
-        #     reactions=True,
-        #     message_content=True,
-        # )
         intents = discord.Intents.all()
 
         super().__init__(

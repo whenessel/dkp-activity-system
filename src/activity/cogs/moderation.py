@@ -1,41 +1,39 @@
 import datetime
-import enum
-import io
 import logging
-import platform
-import re
 import typing as t
-from django.utils import timezone
 
 import discord
+from dateutil.parser import parse
 from discord import app_commands
-from discord.ext import commands, tasks
-from django.db import transaction
-from django.db.models import Count
-from enum_properties import EnumProperties, p, s
+from discord.ext import commands
 
 from activity.choices import AttendanceServer, EventStatus
-from activity.models import Event, EventAttendance
-from activity.resources import CommonEventAttendanceResource
-from evebot.bot import GuildEveContext
+from activity.models import Event
 from evebot.utils import checks
-from evebot.utils.enums import EmojiEnumMIxin
 
+from ..services import ActivityStatisticService
 from .base import (
     BaseEventCog,
     EventButtonsPersistentView,
     EventItem,
     MemberReactions,
     event_embed,
-    event_template_embed,
 )
 
 if t.TYPE_CHECKING:
     from evebot.bot import EveBot
-    from evebot.context import EveContext
+    from evebot.context import EveContext, GuildEveContext
 
 
 logger = logging.getLogger(__name__)
+
+
+class DateTransformer(app_commands.Transformer):
+    async def transform(
+        self, interaction: discord.Interaction, value: str
+    ) -> datetime.datetime:
+        date = parse(value)
+        return date
 
 
 class ModerEventCog(BaseEventCog):
@@ -48,7 +46,7 @@ class ModerEventCog(BaseEventCog):
     @commands.is_owner()
     @commands.guild_only()
     @app_commands.guild_only()
-    async def event_mod(self, ctx: GuildEveContext) -> None:
+    async def event_mod(self, ctx: "GuildEveContext") -> None:
         ...
 
     @event_mod.group(
@@ -61,7 +59,7 @@ class ModerEventCog(BaseEventCog):
     @app_commands.guild_only()
     @checks.event_channel_only()
     @checks.event_moderator_only()
-    async def event_mod_member(self, ctx: GuildEveContext) -> None:
+    async def event_mod_member(self, ctx: "GuildEveContext") -> None:
         ...
 
     @event_mod_member.command(
@@ -86,7 +84,7 @@ class ModerEventCog(BaseEventCog):
         ]
     )
     async def event_mod_member_add(
-        self, ctx: GuildEveContext, member: discord.Member, server: str, event: int
+        self, ctx: "GuildEveContext", member: discord.Member, server: str, event: int
     ) -> None:
         try:
             event = self.event_class.objects.get(id=event)
@@ -104,7 +102,8 @@ class ModerEventCog(BaseEventCog):
             )
         except (EventItem.DoesNotExist, Event.DoesNotExist):
             await ctx.send(
-                f"\N{SKULL AND CROSSBONES} Событие с номером **{event}** не найдено.",
+                f"\N{SKULL AND CROSSBONES} "
+                f"Событие с номером **{event}** не найдено.",
                 ephemeral=True,
             )
 
@@ -122,7 +121,7 @@ class ModerEventCog(BaseEventCog):
         member="Участник, которого надо удалить из события", event="Номер события"
     )
     async def event_mod_member_del(
-        self, ctx: GuildEveContext, member: discord.Member, event: int
+        self, ctx: "GuildEveContext", member: discord.Member, event: int
     ) -> None:
         try:
             event = self.event_class.objects.get(id=event)
@@ -141,7 +140,8 @@ class ModerEventCog(BaseEventCog):
 
         except (EventItem.DoesNotExist, Event.DoesNotExist):
             await ctx.send(
-                f"\N{SKULL AND CROSSBONES} Событие с номером **{event}** не найдено.",
+                f"\N{SKULL AND CROSSBONES} "
+                f"Событие с номером **{event}** не найдено.",
                 ephemeral=True,
             )
 
@@ -155,10 +155,9 @@ class ModerEventCog(BaseEventCog):
     @app_commands.guild_only()
     @checks.event_channel_only()
     @checks.event_moderator_only()
-    async def event_sync(self, ctx: GuildEveContext, event: int) -> None:
+    async def event_sync(self, ctx: "GuildEveContext", event: int) -> None:
         try:
             event: EventItem = EventItem.objects.get(id=event)
-            # event.perform_attendance_reward()
 
             event_message = await event.fetch_message()
             embed = event_embed(event=event)
@@ -189,7 +188,7 @@ class ModerEventCog(BaseEventCog):
     @app_commands.guild_only()
     @checks.event_channel_only()
     @checks.event_moderator_only()
-    async def event_delete(self, ctx: GuildEveContext, event: int) -> None:
+    async def event_delete(self, ctx: "GuildEveContext", event: int) -> None:
         try:
             event: EventItem = EventItem.objects.get(id=event)
             event.status = EventStatus.DELETED
@@ -225,7 +224,7 @@ class ModerEventCog(BaseEventCog):
     @app_commands.guild_only()
     @checks.event_channel_only()
     @checks.event_moderator_only()
-    async def event(self, ctx: GuildEveContext) -> None:
+    async def event(self, ctx: "GuildEveContext") -> None:
         ...
 
     @event.command(
@@ -243,7 +242,7 @@ class ModerEventCog(BaseEventCog):
         schedule="Запланированное время сбора. Формат: 14:00",
     )
     async def event_start(
-        self, ctx: GuildEveContext, title: t.Optional[str], schedule: str
+        self, ctx: "GuildEveContext", title: t.Optional[str], schedule: str
     ) -> None:
         if not title:
             title = "Сбор Арена"
@@ -268,9 +267,23 @@ class ModerEventCog(BaseEventCog):
         for event_reaction in MemberReactions.emojis():
             await message.add_reaction(event_reaction)
 
-    @event_mod.command(
-        name="statistic",
-        description="Статистика посещаемости",
+    @commands.hybrid_group(
+        name="eventstats",
+        description="Группа команд для статистики событий",
+        with_app_command=True,
+        invoke_without_command=False,
+    )
+    @commands.is_owner()
+    @commands.guild_only()
+    @app_commands.guild_only()
+    @checks.event_channel_only()
+    @checks.event_moderator_only()
+    async def event_stats(self, ctx: "GuildEveContext") -> None:
+        ...
+
+    @event_stats.command(
+        name="daterange",
+        description="Статистика посещаемости за выбранный диапазон дат",
         with_app_command=True,
         invoke_without_command=False,
     )
@@ -279,33 +292,77 @@ class ModerEventCog(BaseEventCog):
     @checks.event_channel_only()
     @checks.event_moderator_only()
     @app_commands.describe(
-        start="Пример: 2023-02-01 (YYYY-MM-DD)", end="Пример: 2023-02-09 (YYYY-MM-DD)"
+        start_date="Дата начала статистики. Форматы: 2024-01-01|2024-1-1|2024/1/1",
+        end_date="Дата начала статистики. Форматы: 2024-01-01|2024-1-1|2024/1/1",
     )
-    async def event_statistic(self, ctx: GuildEveContext, start: str, end: str) -> None:
-        start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
-        end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
-
-        filter = {
-            "event__created__gte": timezone.make_aware(start_date),
-            "event__created__lte": timezone.make_aware(end_date),
-            "event__status": EventStatus.FINISHED,
-        }
-
-        filename = f"report_{start}_{end}"
-
+    async def event_stats_date_range(
+        self,
+        ctx: "GuildEveContext",
+        start_date: app_commands.Transform[datetime.datetime, DateTransformer],
+        end_date: app_commands.Transform[datetime.datetime, DateTransformer],
+    ) -> None:
         await ctx.defer(ephemeral=True)
 
-        queryset = EventAttendance.objects.filter(**filter)
-        resource = CommonEventAttendanceResource()
-        result = resource.export(queryset=queryset)
-        stat_data = io.BytesIO(result.xlsx)
-        stat_file = discord.File(
-            stat_data,
-            filename=f"{filename}.xlsx",
-            description=f"Статистика за период с {start_date} по {end_date}",
+        statistic_service = ActivityStatisticService()
+        statistic_file = statistic_service.get_statistics_by_date_range(
+            start_date=start_date, end_date=end_date
         )
+        await ctx.send("Все готово!", file=statistic_file, ephemeral=True)
 
-        await ctx.send("Все готово!", file=stat_file, ephemeral=True)
+    @event_stats.command(
+        name="eventrange",
+        description="Статистика посещаемости за выбранный диапазон событий",
+        with_app_command=True,
+        invoke_without_command=False,
+    )
+    @commands.guild_only()
+    @app_commands.guild_only()
+    @checks.event_channel_only()
+    @checks.event_moderator_only()
+    @app_commands.describe(
+        start_id="ID события начала статистики.",
+        end_id="ID события конца статистики.",
+    )
+    async def event_stats_event_range(
+        self,
+        ctx: "GuildEveContext",
+        start_id: int,
+        end_id: int,
+    ) -> None:
+        await ctx.defer(ephemeral=True)
+
+        statistic_service = ActivityStatisticService()
+        statistic_file = statistic_service.get_statistics_by_event_range(
+            start_id=start_id, end_id=end_id
+        )
+        await ctx.send("Все готово!", file=statistic_file, ephemeral=True)
+
+    @event_stats.command(
+        name="events",
+        description="Статистика посещаемости за выбранные события",
+        with_app_command=True,
+        invoke_without_command=False,
+    )
+    @commands.guild_only()
+    @app_commands.guild_only()
+    @checks.event_channel_only()
+    @checks.event_moderator_only()
+    @app_commands.describe(
+        event_ids="Список событий для статистики. "
+        "Одно или более значений через пробел",
+    )
+    async def event_stats_event_list(
+        self,
+        ctx: "GuildEveContext",
+        event_ids: commands.Greedy[int],
+    ) -> None:
+        await ctx.defer(ephemeral=True)
+
+        statistic_service = ActivityStatisticService()
+        statistic_file = statistic_service.get_statistics_by_event_list(
+            event_ids=event_ids
+        )
+        await ctx.send("Все готово!", file=statistic_file, ephemeral=True)
 
 
 async def setup(bot):

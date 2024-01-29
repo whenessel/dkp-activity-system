@@ -1,30 +1,17 @@
-import datetime
-import enum
-import io
 import logging
-import platform
-import re
 import typing as t
 
 import discord
 from discord import app_commands
-from discord.ext import commands, tasks
-from django.db import transaction
-from django.db.models import Count
-from enum_properties import EnumProperties, p, s
+from discord.ext import commands
 
-from activity.choices import AttendanceServer, EventStatus
-from activity.models import Event, EventAttendance, EventChannel, EventModerator
-from activity.resources import CommonEventAttendanceResource
-from evebot.bot import GuildEveContext
-from evebot.utils import checks
-from evebot.utils.enums import EmojiEnumMIxin
-
+from activity.models import EventChannel, EventModerator
 from .base import BaseEventCog
+
 
 if t.TYPE_CHECKING:
     from evebot.bot import EveBot
-    from evebot.context import EveContext
+    from evebot.context import EveContext, GuildEveContext
 
 
 logger = logging.getLogger(__name__)
@@ -40,7 +27,7 @@ class AdminEventCog(BaseEventCog):
     @commands.is_owner()
     @commands.guild_only()
     @app_commands.guild_only()
-    async def event_admin(self, ctx: GuildEveContext) -> None:
+    async def event_admin(self, ctx: "GuildEveContext") -> None:
         ...
 
     @event_admin.group(
@@ -52,7 +39,7 @@ class AdminEventCog(BaseEventCog):
     @commands.is_owner()
     @commands.guild_only()
     @app_commands.guild_only()
-    async def event_admin_channel(self, ctx: GuildEveContext) -> None:
+    async def event_admin_channel(self, ctx: "GuildEveContext") -> None:
         ...
 
     @event_admin.group(
@@ -64,7 +51,7 @@ class AdminEventCog(BaseEventCog):
     @commands.is_owner()
     @commands.guild_only()
     @app_commands.guild_only()
-    async def event_admin_moderator(self, ctx: GuildEveContext) -> None:
+    async def event_admin_moderator(self, ctx: "GuildEveContext") -> None:
         ...
 
     @event_admin_channel.command(
@@ -78,7 +65,7 @@ class AdminEventCog(BaseEventCog):
     @app_commands.guild_only()
     @app_commands.describe(channel="Текстовый канал для событий")
     async def event_admin_channel_add(
-        self, ctx: GuildEveContext, channel: discord.TextChannel
+        self, ctx: "GuildEveContext", channel: discord.TextChannel
     ) -> None:
         event_channel, _ = EventChannel.objects.get_or_create(
             guild_id=ctx.guild.id, channel_id=channel.id
@@ -99,7 +86,7 @@ class AdminEventCog(BaseEventCog):
     @app_commands.guild_only()
     @app_commands.describe(channel="Текстовый канал для событий")
     async def event_admin_channel_del(
-        self, ctx: GuildEveContext, channel: discord.TextChannel
+        self, ctx: "GuildEveContext", channel: discord.TextChannel
     ) -> None:
         event_channel = EventChannel.objects.get(
             guild_id=ctx.guild.id, channel_id=channel.id
@@ -121,7 +108,7 @@ class AdminEventCog(BaseEventCog):
     @app_commands.guild_only()
     @app_commands.describe(member="Участник, которому предоставить права модерации")
     async def event_admin_moderator_add(
-        self, ctx: GuildEveContext, member: discord.Member
+        self, ctx: "GuildEveContext", member: discord.Member
     ) -> None:
         event_moderator, _ = EventModerator.objects.get_or_create(
             guild_id=ctx.guild.id, member_id=member.id
@@ -142,7 +129,7 @@ class AdminEventCog(BaseEventCog):
     @app_commands.guild_only()
     @app_commands.describe(member="Участник, у которого отозвать права модератора")
     async def event_admin_moderator_del(
-        self, ctx: GuildEveContext, member: discord.Member
+        self, ctx: "GuildEveContext", member: discord.Member
     ) -> None:
         event_moderator = EventModerator.objects.get(
             guild_id=ctx.guild.id, member_id=member.id
@@ -161,7 +148,7 @@ class AdminEventCog(BaseEventCog):
     )
     @commands.guild_only()
     @app_commands.guild_only()
-    async def event_admin_moderator_show(self, ctx: GuildEveContext) -> None:
+    async def event_admin_moderator_show(self, ctx: "GuildEveContext") -> None:
         event_moderators = EventModerator.objects.filter(
             guild_id=ctx.guild.id
         ).values_list("member_id", flat=True)

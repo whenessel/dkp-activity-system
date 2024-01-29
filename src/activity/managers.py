@@ -1,6 +1,6 @@
 from django.db import models
 
-from activity.choices import EventStatus
+from .choices import EventStatus
 
 
 class EventManager(models.Manager):

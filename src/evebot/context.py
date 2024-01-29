@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-import asyncio
 import io
 import typing as t
 
@@ -8,10 +5,7 @@ import discord
 from discord.ext import commands
 
 if t.TYPE_CHECKING:
-    from types import TracebackType
-
     from aiohttp import ClientSession
-
     from evebot.bot import EveBot
 
 
@@ -79,7 +73,7 @@ class DisambiguatorView(discord.ui.View, t.Generic[T]):
     message: discord.Message
     selected: T
 
-    def __init__(self, ctx: EveContext, data: list[T], entry: t.Callable[[T], t.Any]):
+    def __init__(self, ctx: "EveContext", data: list[T], entry: t.Callable[[T], t.Any]):
         super().__init__()
         self.ctx: EveContext = ctx
         self.data: list[T] = data
@@ -122,7 +116,7 @@ class EveContext(commands.Context):
     ]
     prefix: str
     command: commands.Command[t.Any, ..., t.Any]
-    bot: EveBot
+    bot: "EveBot"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -150,7 +144,7 @@ class EveContext(commands.Context):
         return "<Context>"
 
     @property
-    def session(self) -> ClientSession:
+    def session(self) -> "ClientSession":
         return self.bot.session
 
     @discord.utils.cached_property

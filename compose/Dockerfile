@@ -51,5 +51,6 @@ RUN mkdir -p /app/{storage,media,static,secret,logs}
 
 WORKDIR /app
 
-CMD ["runserver", "0.0.0.0:8000"]
+#CMD ["runserver", "0.0.0.0:8000"]
+CMD ["runbot"]
 ENTRYPOINT ["python", "src/manage.py"]
