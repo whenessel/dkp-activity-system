@@ -1,30 +1,56 @@
-FROM python:3.10-alpine
+FROM python:3.12.1-alpine as builder
 MAINTAINER Artem Demidenko <ar.demidenko@gmail.com>
 
-ENV DEBIAN_FRONTEND 'noninteractive'
+ENV PIP_DEFAULT_TIMEOUT=100 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_VIRTUALENVS_CREATE=1 \
+    POETRY_CACHE_DIR=/tmp/poetry_cache \
+    PYTHONUNBUFFERED=1 \
+    PYTHONIOENCODING=utf8 \
+    GIT_PYTHON_REFRESH="quiet" \
+    GIT_DISCOVERY_ACROSS_FILESYSTEM=1
 
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONIOENCODING 'utf-8'
+RUN set -ex \
+    && apk add --update --no-cache gcc musl-dev libffi-dev
 
-ENV DJANGO_SETTINGS_MODULE 'system.settings'
-ENV DJANGO_ALLOW_ASYNC_UNSAFE True
-ENV DATABASE_URL ''
+RUN pip install poetry==1.7.1
 
-ENV PYTHONPATH "/opt/app/python:$PYTHONPATH"
-ENV PATH "/opt/app/bin:$PATH"
+WORKDIR /app
 
-ENV TZ=Europe/Moscow
+COPY pyproject.toml README.md /app/
+COPY src /app/src
+
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --without=dev,test
+
+
+FROM python:3.12.1-alpine as runtime
+MAINTAINER Artem Demidenko <ar.demidenko@gmail.com>
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONHTTPSVERIFY=0 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONIOENCODING="utf8" \
+    PYTHONPATH="/app/src:$PYTHONPATH" \
+    VIRTUAL_ENV="/app/.venv" \
+    PATH="/app/src:/app/.venv/bin:$PATH" \
+    TZ="Europe/Moscow" \
+    DATABASE_URL="" \
+    DJANGO_ALLOW_ASYNC_UNSAFE="True" \
+    DJANGO_SETTINGS_MODULE="system.settings"
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-COPY ./requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt && rm -rf /tmp/requirements.txt
+COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-RUN mkdir -p /opt/app/bin /opt/app/python /opt/app/pids /opt/app/logs /opt/app/storage
-COPY ./src /opt/app/python
+COPY src /app/src
 
-WORKDIR /opt/app/python
+RUN mkdir -p /app/{storage,media,static,secret,logs}
 
-CMD ["runserver", "0.0.0.0:8000"]
-ENTRYPOINT ["python", "manage.py"]
+WORKDIR /app
+
+#CMD ["runserver", "0.0.0.0:8000"]
+CMD ["runbot"]
+ENTRYPOINT ["python", "src/manage.py"]

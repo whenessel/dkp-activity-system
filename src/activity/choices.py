@@ -1,37 +1,20 @@
-import enum
-
 from django.db import models
 
-
-__all__ = ('EventType', 'CapacityUnit', 'EventStatus', 'AttendanceType')
-
-
-class EventType(models.TextChoices):
-    CHAIN = 'CHAIN', 'чейн'
-    ONCE = 'ONCE', 'разовый'
-    AWAKENED = 'AWAKENED', 'пробужденный'
-    TOI = 'TOI', 'ТОИ'
-    VEORA = 'VEORA', 'веора'
-    SIEGE = 'SIEGE', 'осада'
-    CLUSTER = 'CLUSTER', 'кластер'
-    CLAN = 'CLAN', 'клан'
-    ALLIANCE = 'ALLIANCE', 'альянс'
-
-
-class CapacityUnit(models.TextChoices):
-    TIME = 'TIME', 'за минут(а)'
-    BOSS = 'BOSS', 'за босса(ов)'
-    VISIT = 'VISIT', 'за визит(ы)'
+__all__ = ("EventStatus", "AttendanceServer")
 
 
 class EventStatus(models.TextChoices):
-    PENDING = 'PENDING', 'подготовка'
-    STARTED = 'STARTED', 'запущено'
-    FINISHED = 'FINISHED', 'завершено'
-    CANCELED = 'CANCELED', 'остановлено'
+    PENDING = "PENDING", "подготовка"
+    STARTED = "STARTED", "запущено"
+    FINISHED = "FINISHED", "завершено"
+    CANCELED = "CANCELED", "остановлено"
+    DELETED = "DELETED", "удалено"
 
 
-class AttendanceType(models.TextChoices):
-    FULL = 'FULL', 'присутствовал'
-    PARTIAL = 'PARTIAL', 'опоздал'
-    ABSENT = 'ABSENT', 'отсутствовал'
+class AttendanceServer(models.TextChoices):
+    ONE = "Server 1", "Сервер 1"
+    TWO = "Server 2", "Сервер 2"
+    THREE = "Server 3", "Сервер 3"
+    FOUR = "Server 4", "Сервер 4"
+    FIVE = "Server 5", "Сервер 5"
+    SIX = "Server 6", "Сервер 6"

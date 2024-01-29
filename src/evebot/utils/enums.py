@@ -2,7 +2,6 @@ from __future__ import annotations
 
 
 class EmojiEnumMIxin:
-
     @classmethod
     def to_dict(cls):
         """Returns a dictionary representation of the enum."""
