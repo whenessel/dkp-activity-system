@@ -84,6 +84,9 @@ class EveBot(commands.AutoShardedBot):
         )
         self._auto_spam_count = Counter()
 
+    async def configure_owners(self):
+        self.owner_ids = settings.EVE_OWNERS
+
     async def setup_hook(self) -> None:
         self.session = aiohttp.ClientSession()
         # guild_id: list
@@ -100,6 +103,8 @@ class EveBot(commands.AutoShardedBot):
 
         self.bot_app_info = await self.application_info()
         self.owner_id = self.bot_app_info.owner.id
+        await self.configure_owners()
+        logger.info(f"EveBot owners: {self.owner_ids}")
 
         logger.info("Search installed extensions...")
         installed_extensions = find_cogs(settings.INSTALLED_APPS)
@@ -123,6 +128,8 @@ class EveBot(commands.AutoShardedBot):
         if settings.EVE_SYNC_COMMANDS_GLOBALLY:
             logger.info("Syncing commands globally...")
             await self.tree.sync()
+
+        logger.info("EveBot setup complete")
 
     @property
     def prefix(self) -> str:
