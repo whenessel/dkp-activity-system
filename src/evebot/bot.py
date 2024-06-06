@@ -47,6 +47,8 @@ class EveBot(commands.AutoShardedBot):
     command_types_used: Counter[bool]
     logging_handler: t.Any
     bot_app_info: discord.AppInfo
+    owner_id: int
+    owner_ids: t.List[int]
     old_tree_error = t.Callable[
         [discord.Interaction, discord.app_commands.AppCommandError],
         t.Coroutine[t.Any, t.Any, None],
@@ -66,7 +68,7 @@ class EveBot(commands.AutoShardedBot):
         intents = discord.Intents.all()
 
         super().__init__(
-            command_prefix=_prefix_callable,
+            command_prefix=settings.EVE_PREFIX,
             description=description,
             pm_help=None,
             help_attrs=dict(hidden=True),
@@ -77,6 +79,12 @@ class EveBot(commands.AutoShardedBot):
             enable_debug_events=True,
         )
         self.client_id: str = settings.EVE_CLIENT_ID
+
+        self.owner_id = settings.EVE_OWNERS[0]
+        self.owner_ids = settings.EVE_OWNERS
+
+        logger.info(f"EveBot owners: {self.owner_ids}")
+
         self.resumes: defaultdict[int, list[datetime.datetime]] = defaultdict(list)
         self.identifies: defaultdict[int, list[datetime.datetime]] = defaultdict(list)
         self.spam_control = commands.CooldownMapping.from_cooldown(
@@ -84,15 +92,9 @@ class EveBot(commands.AutoShardedBot):
         )
         self._auto_spam_count = Counter()
 
-    async def configure_owners(self):
-        self.owner_ids = settings.EVE_OWNERS
-
     async def setup_hook(self) -> None:
         self.session = aiohttp.ClientSession()
-        # guild_id: list
-        self.prefixes: PersistJsonFile[list[str]] = PersistJsonFile(
-            settings.SECRET_ROOT / "prefixes.json"
-        )
+        self.bot_app_info = await self.application_info()
 
         # guild_id and user_id mapped to True
         # these are users and guilds globally blacklisted
@@ -100,11 +102,6 @@ class EveBot(commands.AutoShardedBot):
         self.blacklist: PersistJsonFile[bool] = PersistJsonFile(
             settings.SECRET_ROOT / "blacklist.json"
         )
-
-        self.bot_app_info = await self.application_info()
-        self.owner_id = self.bot_app_info.owner.id
-        await self.configure_owners()
-        logger.info(f"EveBot owners: {self.owner_ids}")
 
         logger.info("Search installed extensions...")
         installed_extensions = find_cogs(settings.INSTALLED_APPS)
@@ -135,9 +132,45 @@ class EveBot(commands.AutoShardedBot):
     def prefix(self) -> str:
         return settings.EVE_PREFIX
 
-    @property
-    def owner(self) -> discord.User:
-        return self.bot_app_info.owner
+    async def is_owner(self, user: discord.User, /) -> bool:
+        """|coro|
+
+        Checks if a :class:`~discord.User` or :class:`~discord.Member` is the owner of
+        this bot.
+
+        If an :attr:`owner_id` is not set, it is fetched automatically
+        through the use of :meth:`~.Bot.application_info`.
+
+        .. versionchanged:: 1.3
+            The function also checks if the application is team-owned if
+            :attr:`owner_ids` is not set.
+
+        .. versionchanged:: 2.0
+
+            ``user`` parameter is now positional-only.
+
+        Parameters
+        -----------
+        user: :class:`.abc.User`
+            The user to check for.
+
+        Returns
+        --------
+        :class:`bool`
+            Whether the user is the owner.
+        """
+        if user.id == self.owner_id:
+            return True
+        elif user.id in self.owner_ids:
+            return True
+        else:
+            app = await self.application_info()  # type: ignore
+            if app.team:
+                owner_ids = {m.id for m in app.team.members}
+                return user.id in owner_ids
+            else:
+                owner_id = app.owner.id
+                return user.id == owner_id
 
     def _clear_gateway_data(self) -> None:
         one_week_ago = discord.utils.utcnow() - datetime.timedelta(days=7)

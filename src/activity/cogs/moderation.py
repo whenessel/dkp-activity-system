@@ -261,7 +261,9 @@ class ModerEventCog(BaseEventCog):
         embed = event_embed(event=event)
         event_buttons_view = EventButtonsPersistentView(cog=self)
 
-        message = await ctx.send(embed=embed, view=event_buttons_view)
+        message = await ctx.send(
+            content="Призываю: @everyone\n", embed=embed, view=event_buttons_view
+        )
 
         event.save(message_id=message.id)
         for event_reaction in MemberReactions.emojis():
