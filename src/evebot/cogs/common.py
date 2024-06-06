@@ -4,6 +4,7 @@ import typing as t
 
 import discord
 from discord.ext import commands
+from discord.mentions import AllowedMentions
 
 if t.TYPE_CHECKING:
     from evebot.bot import EveBot, EveContext
@@ -29,18 +30,22 @@ class CommonCog(commands.Cog):
         embed.add_field(
             name="Python Version:", value=f"{platform.python_version()}", inline=True
         )
-        prefixes = "\n".join(
-            [
-                f'\t{prefix if "@" not in prefix else prefix+" "}botinfo'
-                for prefix in self.bot.get_guild_prefixes(ctx.guild)
-            ]
-        )
+
         embed.add_field(
             name="Префикс:",
             value=f"/ для команд приложения или "
-            f"{self.bot.prefix} для текстовых команд.\n"
-            f"Варианты использования для текущего сервера:\n"
-            f"{prefixes}\n",
+            f"{self.bot.prefix} для текстовых команд.",
+            inline=False,
+        )
+
+        admins = []
+        for owner_id in ctx.bot.owner_ids:
+            member = ctx.guild.get_member(owner_id)
+            if member:
+                admins.append(member)
+        embed.add_field(
+            name="Админы:",
+            value=f"{' '.join([admin.mention for admin in admins])}",
             inline=False,
         )
         embed.set_footer(text=f"Запросил {ctx.author}")
