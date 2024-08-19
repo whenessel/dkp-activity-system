@@ -1,6 +1,7 @@
 import enum
 import logging
 import typing as t
+from collections import OrderedDict
 
 import discord
 from discord import app_commands
@@ -99,6 +100,43 @@ def event_embed(event: "EventItem") -> discord.Embed:
 
         embed.set_footer(text=stats_footer)
 
+    return embed
+
+
+def event_stats_embed(event: "EventItem") -> discord.Embed:
+    embed = discord.Embed(colour=discord.Colour.blue())
+    embed.title = f"Статистика для {event.title.upper()}"
+    embed.description = (
+        "Список присутствующих на момент завершения события. "
+        "(Тех, кто отметился самостоятельно)"
+    )
+
+    statistics = OrderedDict(
+        {server: {"cnt": 0, "members": []} for server in AttendanceServer.values}
+    )
+
+    for item in (
+        event.event_attendances.values("server")
+        .annotate(Count("server"))
+        .values()
+        .distinct()
+    ):
+        server = item["server"]
+        server_cnt = item["server__count"]
+        statistics[server]["cnt"] = server_cnt
+        statistics[server]["members"].append(
+            item.get("member_display_name", item["member_name"])
+        )
+    server_name_mapper = {e.value: e.label for e in AttendanceServer}
+    for server_key, server_stats in statistics.items():
+        server_name = server_name_mapper[server_key]
+        server_emoji = MemberReactions[server_key]
+        title = f"{server_emoji.emoji} {server_name}    **{server_stats['cnt']}**"
+        members = ""
+        for member in server_stats["members"]:
+            members += f"{member}\n"
+        members += "\n"
+        embed.add_field(name=title, value=members, inline=False)
     return embed
 
 
@@ -264,6 +302,14 @@ class EventButtonsPersistentView(discord.ui.View):
         embed = event_embed(event=self.event)
         await interaction.response.edit_message(content=None, embed=embed, view=None)
         await self.event.clean_reactions()
+
+        parent_message = await self.event.fetch_message()
+        stats_embed = event_stats_embed(self.event)
+        try:
+            thread = await parent_message.create_thread(name="Статистика")
+            await thread.send(content=None, embed=stats_embed)
+        except Exception:
+            await parent_message.reply(content=None, embed=stats_embed)
         return
 
     @discord.ui.button(

@@ -18,6 +18,7 @@ from .base import (
     EventItem,
     MemberReactions,
     event_embed,
+    event_stats_embed,
 )
 
 if t.TYPE_CHECKING:
@@ -88,11 +89,21 @@ class ModerEventCog(BaseEventCog):
     ) -> None:
         try:
             event = self.event_class.objects.get(id=event)
+
+            if event.status != EventStatus.FINISHED:
+                await ctx.send(
+                    f"\N{SKULL AND CROSSBONES} "
+                    f"Событие с номером **{event.id}** не завершено.\n"
+                    f"Дождитесь завершения события перед тем как добавлять опаздавших.",
+                    ephemeral=True,
+                )
+                return
+
             event.add_member_attendance(member=member, server=server)
 
             event_message = await event.fetch_message()
             embed = event_embed(event=event)
-            await event_message.edit(content=None, embed=embed, view=None)
+            await event_message.edit(content=None, embed=embed)
 
             await ctx.send(
                 f"Добавлен участник {member.mention} "
@@ -129,7 +140,7 @@ class ModerEventCog(BaseEventCog):
 
             event_message = await event.fetch_message()
             embed = event_embed(event=event)
-            await event_message.edit(content=None, embed=embed, view=None)
+            await event_message.edit(content=None, embed=embed)
 
             await ctx.send(
                 f"Удален участник {member.mention} из события "
@@ -162,7 +173,7 @@ class ModerEventCog(BaseEventCog):
             event_message = await event.fetch_message()
             embed = event_embed(event=event)
 
-            await event_message.edit(content=None, embed=embed, view=None)
+            await event_message.edit(content=None, embed=embed)
 
             await ctx.send(
                 f"**Синхронизировано**\n"
@@ -365,6 +376,52 @@ class ModerEventCog(BaseEventCog):
             event_ids=event_ids
         )
         await ctx.send("Все готово!", file=statistic_file, ephemeral=True)
+
+    # @event.command(
+    #     name="evedbg",
+    #     description="DEBUG",
+    #     with_app_command=True,
+    #     invoke_without_command=False,
+    # )
+    # @commands.is_owner()
+    # @commands.guild_only()
+    # @app_commands.guild_only()
+    # async def evedbg(self, ctx: "GuildEveContext") -> None:
+    #     title = "Отладка"
+    #     description = ""
+    #
+    #     event = self.event_class.objects.create(
+    #         guild_id=ctx.guild.id,
+    #         channel_id=ctx.channel.id,
+    #         member_id=ctx.author.id,
+    #         member_name=ctx.author.name,
+    #         member_display_name=ctx.author.display_name,
+    #         title=title,
+    #         description=description,
+    #         status=EventStatus.STARTED,
+    #     )
+    #
+    #     embed = event_embed(event=event)
+    #     event_buttons_view = EventButtonsPersistentView(cog=self)
+    #
+    #     message = await ctx.send(
+    #         content="Призываю: @everyone\n", embed=embed, view=event_buttons_view
+    #     )
+    #     event.save(message_id=message.id)
+    #
+    #     member = ctx.guild.get_member(1071816304371171328)
+    #     event.add_member_attendance(
+    #         member=member,
+    #         server=AttendanceServer.ONE,
+    #     )
+    #     member = ctx.guild.get_member(410756194597339136)
+    #     event.add_member_attendance(
+    #         member=member,
+    #         server=AttendanceServer.FOUR,
+    #     )
+    #
+    #     for event_reaction in MemberReactions.emojis():
+    #         await message.add_reaction(event_reaction)
 
 
 async def setup(bot):
