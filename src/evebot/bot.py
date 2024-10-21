@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import logging
 import os
@@ -7,12 +8,19 @@ from collections import Counter, defaultdict
 
 import aiohttp
 import discord
+from aiohttp_socks.connector import ProxyConnector
+from discord.client import _loop
 from discord.ext import commands
+from discord.ext.commands.bot import BotBase
+from discord.http import HTTPClient
 from django.conf import settings
+from django.db.models.expressions import connector
 
+from evebot.client import EveAutoShardedClient
 from evebot.context import EveContext
 from evebot.utils.functional import find_cogs
 from evebot.utils.storage import PersistJsonFile
+from system.settings import EVE_PROXY_HOST
 
 description = """
 Hello! I am a "EVE" bot to provide some nice features.
@@ -40,7 +48,8 @@ class ProxyObject(discord.Object):
         self.guild: t.Optional[discord.abc.Snowflake] = guild
 
 
-class EveBot(commands.AutoShardedBot):
+# class EveBot(commands.AutoShardedBot):
+class EveBot(BotBase, EveAutoShardedClient):
     user: discord.ClientUser
     command_stats: Counter[str]
     socket_stats: Counter[str]
@@ -67,6 +76,24 @@ class EveBot(commands.AutoShardedBot):
         )
         intents = discord.Intents.all()
 
+        self.proxy_uri: t.Optional[str] = None
+        if all(
+            [
+                settings.EVE_PROXY_TYPE,
+                settings.EVE_PROXY_USER,
+                settings.EVE_PROXY_PASSWORD,
+                settings.EVE_PROXY_HOST,
+                settings.EVE_PROXY_PORT,
+            ]
+        ):
+            self.proxy_uri: t.Optional[str] = (
+                f"{settings.EVE_PROXY_TYPE}://"
+                f"{settings.EVE_PROXY_USER}:"
+                f"{settings.EVE_PROXY_PASSWORD}@"
+                f"{EVE_PROXY_HOST}:"
+                f"{settings.EVE_PROXY_PORT}"
+            )
+
         super().__init__(
             command_prefix=settings.EVE_PREFIX,
             description=description,
@@ -77,6 +104,7 @@ class EveBot(commands.AutoShardedBot):
             allowed_mentions=allowed_mentions,
             intents=intents,
             enable_debug_events=True,
+            proxy_uri=self.proxy_uri,
         )
         self.client_id: str = settings.EVE_CLIENT_ID
 
@@ -93,12 +121,9 @@ class EveBot(commands.AutoShardedBot):
         self._auto_spam_count = Counter()
 
     async def setup_hook(self) -> None:
-        self.session = aiohttp.ClientSession()
+        self.session = self.http.session
         self.bot_app_info = await self.application_info()
 
-        # guild_id and user_id mapped to True
-        # these are users and guilds globally blacklisted
-        # from using the bot
         self.blacklist: PersistJsonFile[bool] = PersistJsonFile(
             settings.SECRET_ROOT / "blacklist.json"
         )

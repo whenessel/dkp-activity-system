@@ -1,24 +1,12 @@
 version: '3.7'
 
 x-dkp-docker: &dkp-activity-system
-  build:
-    context: .
-    dockerfile: ./compose/Dockerfile
-  image: whenessel/dkp-activity-system:latest
+  image: whenessel/dkp-activity-system:development
   env_file:
     - ./docker-compose.env
 
 
 services:
-  eve-web:
-    <<: *dkp-activity-system
-    container_name: eve-web
-    restart: always
-    ports:
-      - 8000:8000
-    depends_on:
-      - eve-postgres
-
   eve-bot:
     <<: *dkp-activity-system
     container_name: eve-bot
